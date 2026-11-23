@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Serif_Display, Inter } from "next/font/google";
+import { DM_Serif_Display, Inter, Space_Grotesk } from "next/font/google";
 import { cookies } from "next/headers";
 import { THEME_COOKIE } from "@/lib/theme";
 import "./globals.css";
@@ -7,6 +7,8 @@ import "./globals.css";
 // Same type as the Vawe website: Inter for the interface, DM Serif Display for a few big headings.
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const serif = DM_Serif_Display({ subsets: ["latin"], weight: "400", variable: "--font-dm-serif" });
+// Only for the "Powered by Lasan Labs" credit on the sign-in pages, as on the Vawe website.
+const grotesk = Space_Grotesk({ subsets: ["latin"], weight: "600", variable: "--font-space-grotesk" });
 
 export const metadata: Metadata = {
   title: { default: "Vawe OMS", template: "%s · Vawe OMS" },
@@ -29,7 +31,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const saved = (await cookies()).get(THEME_COOKIE)?.value;
   const theme = saved === "dark" || saved === "light" ? saved : undefined;
   return (
-    <html lang="en" data-theme={theme} className={`${inter.variable} ${serif.variable}`}>
+    <html lang="en" data-theme={theme} className={`${inter.variable} ${serif.variable} ${grotesk.variable}`}>
       <body className="min-h-dvh font-sans">{children}</body>
     </html>
   );

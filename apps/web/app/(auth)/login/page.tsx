@@ -13,7 +13,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
   const { expired } = await searchParams;
   return (
-    <AuthFrame area="Dashboard" title="Sign in" subtitle="Use the email and password your admin gave you.">
+    <AuthFrame area="OMS Dashboard" title="Sign in" subtitle="Use the email and password your admin gave you.">
       <LoginForm scope="app" notice={expired ? "Your session ended. Please sign in again." : undefined} />
     </AuthFrame>
   );
