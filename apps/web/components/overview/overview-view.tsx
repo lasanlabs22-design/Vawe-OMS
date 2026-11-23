@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Boxes, CalendarDays, Clock3, Factory, Handshake, PieChart, TrendingUp, Wallet } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Clock3, Factory, Handshake, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { STAGE_LABELS, UNIT_LABELS, type InventoryUnit, type OrderStage } from "@vawe/shared";
-import { TrendChart } from "../charts";
-import { BulletList, CalendarHeatmap, Donut, Ring, SegmentedBar, StageFlow, VizCard, Waffle } from "../viz";
+import { change, CountUp } from "../charts";
+import { BulletList, CalendarHeatmap, DailyBars, Donut, Ring, SegmentedBar, StageFlow, VizCard, Waffle } from "../viz";
+import { cx } from "@/lib/cx";
 import { dayLabel, dayLong } from "@/lib/dates";
 import { moneyShort } from "@/lib/format";
 
@@ -44,22 +45,52 @@ function More({ href, label = "Open" }: { href: string; label?: string }) {
   );
 }
 
+function Fact({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 sm:flex sm:items-baseline sm:justify-between sm:gap-3">
+      <dt className="truncate text-[12px] text-ink-3">{label}</dt>
+      <dd className="text-[15px] font-semibold tabular-nums">{value}</dd>
+    </div>
+  );
+}
+
 export function OverviewView({ data }: { data: OverviewData }) {
   const { orders, sales, finance, vendor, inventory } = data;
-  const pace = sales && sales.lastMonthToDate > 0 ? sales.monthValue / sales.lastMonthToDate : sales && sales.monthValue > 0 ? 1 : 0;
+  const growth = sales ? change(sales.monthValue, sales.lastMonthToDate) : null;
   const collectedShare = finance ? finance.collectedThisMonth / Math.max(1, finance.collectedThisMonth + finance.receivable) : 0;
   const lineTotal = inventory.lines.ok + inventory.lines.low + inventory.lines.out;
 
   return (
     <div className="grid gap-5 lg:grid-cols-6">
       {sales && (
-        <VizCard icon={TrendingUp} tone="var(--chart-1)" title="Sales pulse" subtitle="Order value per day, last 30 days (before GST)" className="lg:col-span-4" action={<More href="/sales" />}>
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center">
-            <div className="min-w-0 flex-1">
-              <TrendChart points={sales.daily.map((d) => ({ label: dayLabel(d.date), a: d.value, title: dayLong(d.date) }))} aLabel="value" valueFormat="money" height={190} />
+        <VizCard icon={TrendingUp} tone="var(--chart-1)" title="Sales this month" subtitle="Order value before GST" className="lg:col-span-4" action={<More href="/sales" />}>
+          <div className="grid gap-6 sm:grid-cols-[13rem_minmax(0,1fr)]">
+            <div className="min-w-0">
+              <CountUp value={sales.monthValue} format="moneyShort" className="block text-[2.5rem] leading-none font-semibold tracking-tight tabular-nums" />
+              {growth !== null && (
+                <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-ink-3">
+                  <span className={cx("inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold", growth >= 0 ? "bg-good-soft text-good" : "bg-bad-soft text-bad")}>
+                    {growth >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    {Math.abs(Math.round(growth))}%
+                  </span>
+                  vs the same days last month
+                </p>
+              )}
+              <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4 sm:grid-cols-1 sm:gap-2.5">
+                <Fact label="Orders" value={sales.monthOrders.toLocaleString("en-IN")} />
+                <Fact label="Average order" value={sales.monthOrders ? moneyShort(sales.monthValue / sales.monthOrders) : "None yet"} />
+                <Fact label="Last month in all" value={moneyShort(sales.lastMonthTotal)} />
+              </dl>
             </div>
-            <div className="flex shrink-0 justify-center">
-              <Ring ratio={pace} value={moneyShort(sales.monthValue)} label={`this month · ${Math.round(pace * 100)}% of last month's pace`} color="var(--chart-1)" />
+            <div className="min-w-0">
+              <p className="mb-3 flex flex-wrap items-center justify-between gap-x-3 text-[12.5px] text-ink-3">
+                <span>Order value per day, last 30 days</span>
+                <span className="flex items-center gap-1.5">
+                  <span aria-hidden className="w-4 border-t border-dashed border-ink-3" />
+                  avg {moneyShort(sales.daily.reduce((s, d) => s + d.value, 0) / Math.max(1, sales.daily.length))} a day
+                </span>
+              </p>
+              <DailyBars days={sales.daily.map((d) => ({ label: dayLabel(d.date), title: dayLong(d.date), value: d.value }))} format={moneyShort} height={170} />
             </div>
           </div>
         </VizCard>
@@ -129,6 +160,10 @@ export function OverviewView({ data }: { data: OverviewData }) {
 
       {finance && (
         <VizCard icon={Clock3} tone="var(--bad)" title="Money owed, by age" subtitle="How late the open balances are" className="lg:col-span-3" action={<More href="/finance?tab=receivables" />}>
+          <p className="mb-4">
+            <CountUp value={finance.receivable} format="moneyShort" className="text-[1.9rem] leading-none font-semibold tracking-tight tabular-nums" />
+            <span className="ml-2 text-[13px] text-ink-3">owed to Vawe</span>
+          </p>
           <SegmentedBar parts={finance.aging.map((a, i) => ({ label: a.label, value: a.amount, color: AGING_COLORS[i]! }))} format={moneyShort} />
         </VizCard>
       )}

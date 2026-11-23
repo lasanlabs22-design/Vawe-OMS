@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { cx } from "@/lib/cx";
 
 // Picture-first visuals for the Overview. Each one animates in when it scrolls into view (and not
@@ -62,6 +62,7 @@ export function Donut({
       <div className="relative shrink-0" style={{ width: size, height: size }}>
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90" role="img" aria-label={slices.map((s) => `${s.label}: ${format(s.value)}`).join(", ")}>
           <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={thickness} />
+          <circle cx={size / 2} cy={size / 2} r={r - thickness / 2 - 5} fill="none" stroke="var(--line)" strokeWidth={1} opacity={0.7} />
           {total > 0 &&
             slices.map((s, i) => {
               const len = (s.value / total) * circ;
@@ -87,7 +88,7 @@ export function Donut({
             })}
         </svg>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="text-2xl font-semibold tracking-tight">{h ? format(h.value) : (center?.value ?? format(total))}</span>
+          <span className="text-[1.7rem] leading-tight font-semibold tracking-tight tabular-nums">{h ? format(h.value) : (center?.value ?? format(total))}</span>
           <span className="max-w-[70%] text-[11.5px] leading-tight text-ink-3">{h ? h.label : (center?.label ?? "Total")}</span>
         </div>
       </div>
@@ -119,19 +120,27 @@ export function Donut({
 /** How far along something is (0–1+), as a ring filling up. */
 export function Ring({ ratio, size = 132, thickness = 12, value, label, color = "var(--chart-1)" }: { ratio: number; size?: number; thickness?: number; value: string; label: string; color?: string }) {
   const [ref, seen] = useSeen<HTMLDivElement>();
+  const id = useId();
   const r = (size - thickness) / 2;
   const circ = 2 * Math.PI * r;
   const shown = Math.max(0, Math.min(1, ratio));
   return (
     <div ref={ref} className="relative shrink-0" style={{ width: size, height: size }} role="img" aria-label={`${label}: ${value}`}>
       <svg width={size} height={size} className="-rotate-90">
+        <defs>
+          <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor={`color-mix(in oklab, ${color} 55%, var(--surface))`} />
+            <stop offset="100%" stopColor={color} />
+          </linearGradient>
+        </defs>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--surface-2)" strokeWidth={thickness} />
+        <circle cx={size / 2} cy={size / 2} r={r - thickness / 2 - 5} fill="none" stroke="var(--line)" strokeWidth={1} opacity={0.7} />
         <circle
           cx={size / 2}
           cy={size / 2}
           r={r}
           fill="none"
-          stroke={color}
+          stroke={`url(#${id}-g)`}
           strokeWidth={thickness}
           strokeLinecap="round"
           strokeDasharray={`${seen ? shown * circ : 0} ${circ}`}
@@ -155,7 +164,7 @@ export function SegmentedBar({ parts, format = (n) => n.toLocaleString("en-IN") 
   const total = parts.reduce((s, p) => s + p.value, 0);
   return (
     <div ref={ref}>
-      <div className="flex h-7 w-full gap-[2px] overflow-hidden rounded-md bg-surface-2" role="img" aria-label={parts.map((p) => `${p.label}: ${format(p.value)}`).join(", ")}>
+      <div className="flex h-3.5 w-full gap-[2px] overflow-hidden rounded-full bg-surface-2" role="img" aria-label={parts.map((p) => `${p.label}: ${format(p.value)}`).join(", ")}>
         {total > 0 &&
           parts.map((p, i) =>
             p.value > 0 ? (
@@ -163,7 +172,7 @@ export function SegmentedBar({ parts, format = (n) => n.toLocaleString("en-IN") 
                 key={p.label}
                 onPointerEnter={() => setHover(i)}
                 onPointerLeave={() => setHover(null)}
-                className="h-full first:rounded-l-md last:rounded-r-md"
+                className="h-full first:rounded-l-full last:rounded-r-full"
                 style={{
                   background: p.color,
                   width: seen ? `${(p.value / total) * 100}%` : "0%",
@@ -199,9 +208,10 @@ export function Waffle({ tiles, legend }: { tiles: { label: string; color: strin
           <span
             key={`${t.label}-${i}`}
             title={t.label}
-            className="size-5 rounded-[5px] transition-[transform,opacity] hover:scale-125"
+            className="size-6 rounded-[7px] transition-[transform,opacity] hover:scale-125"
             style={{
-              background: t.color,
+              background: `linear-gradient(145deg, color-mix(in oklab, ${t.color} 78%, white), ${t.color})`,
+              boxShadow: "inset 0 0 0 1px rgb(0 0 0 / 0.06)",
               transform: seen ? "scale(1)" : "scale(0)",
               opacity: seen ? 1 : 0,
               transitionDuration: "450ms",
@@ -356,9 +366,9 @@ export function StageFlow({ stages, groups }: { stages: { label: string; count: 
             <a key={s.label} href={s.href} title={`${s.label}: ${s.count}`} className="group flex h-full flex-1 flex-col items-center justify-end">
               <span className="mb-1 text-[13px] font-semibold tabular-nums">{s.count}</span>
               <span
-                className="w-full max-w-9 rounded-t-[5px] transition-opacity group-hover:opacity-80"
+                className="w-full max-w-9 rounded-t-[7px] rounded-b-[2px] transition-opacity group-hover:opacity-80"
                 style={{
-                  background: s.count ? s.color : "var(--surface-2)",
+                  background: s.count ? `linear-gradient(180deg, ${s.color}, color-mix(in oklab, ${s.color} 60%, var(--surface)))` : "var(--surface-2)",
                   height: seen ? `${Math.max(s.count ? 8 : 3, (s.count / max) * 80)}px` : "0px",
                   transition: `height 800ms ${EASE} ${i * 55}ms`,
                 }}
@@ -519,6 +529,82 @@ export function RadialBars({ rows, color = "var(--chart-2)", size = 220, format 
   );
 }
 
+// ---------- Daily bars ----------
+
+/**
+ * One slim column per day, with a dashed line at the daily average (name it beside the chart).
+ * Hover a day for its value.
+ * Days with nothing show as a dot on the baseline, so gaps read as "no sales", not missing data.
+ */
+export function DailyBars({
+  days,
+  color = "var(--chart-1)",
+  height = 160,
+  format = (n) => n.toLocaleString("en-IN"),
+}: {
+  days: { label: string; title: string; value: number }[];
+  color?: string;
+  height?: number;
+  format?: (n: number) => string;
+}) {
+  const [ref, seen] = useSeen<HTMLDivElement>();
+  const [hover, setHover] = useState<number | null>(null);
+  const n = days.length;
+  const max = Math.max(1, ...days.map((d) => d.value));
+  const avg = n ? days.reduce((s, d) => s + d.value, 0) / n : 0;
+  const h = hover !== null ? days[hover] : null;
+  const at = (i: number) => ((i + 0.5) / n) * 100;
+  const tick = [0, Math.floor((n - 1) / 2), n - 1].filter((i, k, a) => n > 0 && a.indexOf(i) === k);
+
+  return (
+    <div ref={ref}>
+      <div className="relative" style={{ height }} role="img" aria-label={`${n} days, average ${format(avg)} a day, best ${format(max)}`}>
+        {avg > 0 && (
+          <div aria-hidden className="pointer-events-none absolute inset-x-0 z-10 border-t border-dashed border-ink-3/60" style={{ bottom: `${(avg / max) * 100}%` }} />
+        )}
+        <div className="absolute inset-0 flex items-end gap-[3px]">
+          {days.map((d, i) => (
+            <div key={d.label + i} className="relative flex h-full flex-1 items-end justify-center" onPointerEnter={() => setHover(i)} onPointerLeave={() => setHover(null)}>
+              {d.value > 0 ? (
+                <div
+                  className="w-full max-w-4 rounded-t-[5px] rounded-b-[2px]"
+                  style={{
+                    height: seen ? `${Math.max(3, (d.value / max) * 100)}%` : "0%",
+                    background: `linear-gradient(180deg, ${color}, color-mix(in oklab, ${color} 55%, var(--surface)))`,
+                    opacity: hover === null || hover === i ? 1 : 0.35,
+                    transition: `height 900ms ${EASE} ${i * 18}ms, opacity 150ms`,
+                  }}
+                />
+              ) : (
+                <span aria-hidden className="mb-[-2px] size-1 rounded-full bg-line" />
+              )}
+            </div>
+          ))}
+        </div>
+        {h && (
+          <div
+            className={cx(
+              "pointer-events-none absolute top-0 z-20 rounded-lg bg-solid px-2.5 py-1.5 text-[12px] whitespace-nowrap text-on-solid shadow-lg",
+              hover! < n * 0.2 ? "translate-x-0" : hover! > n * 0.8 ? "-translate-x-full" : "-translate-x-1/2",
+            )}
+            style={{ left: `${at(hover!)}%` }}
+          >
+            <span className="opacity-70">{h.title}</span>
+            <span className="ml-2 font-semibold tabular-nums">{h.value ? format(h.value) : "No orders"}</span>
+          </div>
+        )}
+      </div>
+      <div className="relative mt-2 h-4 border-t border-line text-[11px] text-ink-3">
+        {tick.map((i) => (
+          <span key={i} className={cx("absolute top-1", i === 0 ? "left-0" : i === n - 1 ? "right-0" : "-translate-x-1/2")} style={i !== 0 && i !== n - 1 ? { left: `${at(i)}%` } : undefined}>
+            {days[i]!.label}
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Split bars ----------
 
 /**
@@ -603,22 +689,32 @@ export function VizCard({
   tone?: string;
 }) {
   return (
-    <section className={cx("animate-rise min-w-0 rounded-2xl border border-line bg-surface p-4 sm:p-5", className)}>
-      <div className="mb-4 flex items-start justify-between gap-3">
+    <section
+      className={cx(
+        "animate-rise relative min-w-0 overflow-hidden rounded-2xl border border-line bg-surface p-4 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_12px_32px_-18px_rgb(0_0_0/0.14)] transition-shadow hover:shadow-[0_1px_2px_rgb(0_0_0/0.05),0_18px_40px_-18px_rgb(0_0_0/0.2)] sm:p-5",
+        className,
+      )}
+    >
+      {/* A faint wash of the card's colour along the top edge. */}
+      {tone && <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-24" style={{ background: `linear-gradient(180deg, color-mix(in oklab, ${tone} 7%, transparent), transparent)` }} />}
+      <div className="relative mb-4 flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
           {Icon && tone && (
-            <span className="flex size-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `color-mix(in oklab, ${tone} 14%, var(--surface))`, color: tone }}>
+            <span
+              className="flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset"
+              style={{ background: `linear-gradient(145deg, color-mix(in oklab, ${tone} 22%, var(--surface)), color-mix(in oklab, ${tone} 8%, var(--surface)))`, color: tone, ["--tw-ring-color" as string]: `color-mix(in oklab, ${tone} 25%, transparent)` }}
+            >
               <Icon size={18} />
             </span>
           )}
           <div className="min-w-0">
-            <h3 className="font-semibold">{title}</h3>
+            <h3 className="font-semibold tracking-tight">{title}</h3>
             {subtitle && <p className="mt-0.5 text-[13px] text-ink-3">{subtitle}</p>}
           </div>
         </div>
         {action}
       </div>
-      {children}
+      <div className="relative">{children}</div>
     </section>
   );
 }
