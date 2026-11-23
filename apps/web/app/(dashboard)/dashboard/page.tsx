@@ -2,12 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowUpRight, UserRound } from "lucide-react";
 import { accessFor } from "@vawe/shared";
+import { StatTile } from "@/components/charts";
 import { AccessBadge, MODULE_PLAN } from "@/components/module-page";
 import { Card } from "@/components/ui";
 import { MODULE_NAV } from "@/lib/modules";
-import { requireMe } from "@/lib/server-api";
+import { apiGet, requireMe } from "@/lib/server-api";
 
 export const metadata: Metadata = { title: "Overview" };
+
+interface OverviewData {
+  orders?: { active: number; inProduction: number; onHold: number; lateDeliveries: number };
+  sales?: { monthOrders: number; monthValue: number };
+  finance?: { receivable: number; overdue: number };
+  vendor?: { openFollowups: number };
+  inventory: { lowStock: number };
+}
 
 function greeting(): string {
   const hour = Number(new Intl.DateTimeFormat("en-IN", { hour: "numeric", hour12: false, timeZone: "Asia/Kolkata" }).format(new Date()));
@@ -21,6 +30,22 @@ export default async function OverviewPage() {
   const modules = MODULE_NAV.filter((n) => n.module && accessFor(me, n.module) !== "none");
   const today = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: "Asia/Kolkata" }).format(new Date());
   const profileIncomplete = !me.phone || !me.bloodGroup || !me.emergencyPhone || !me.photoUrl;
+  const res = await apiGet<OverviewData>("/v1/overview");
+  const d = res.ok ? res.data : null;
+
+  const tiles: React.ReactNode[] = [];
+  if (d?.orders) {
+    tiles.push(<StatTile key="active" label="Orders in progress" value={d.orders.active} hint={`${d.orders.inProduction} in production`} />);
+    tiles.push(<StatTile key="hold" label="On hold" value={d.orders.onHold} tone="warn" hint="Waiting for materials" />);
+  }
+  if (d?.sales) tiles.push(<StatTile key="sales" label="Sales this month" value={d.sales.monthValue} format="moneyShort" hint={`${d.sales.monthOrders} orders, before GST`} />);
+  if (d?.finance) {
+    tiles.push(<StatTile key="recv" label="To be received" value={d.finance.receivable} format="moneyShort" hint="All open orders" />);
+    tiles.push(<StatTile key="over" label="Overdue" value={d.finance.overdue} format="moneyShort" tone="bad" hint="Past the due date" />);
+  }
+  if (d?.orders) tiles.push(<StatTile key="late" label="Past expected delivery" value={d.orders.lateDeliveries} tone="bad" hint="Not yet dispatched" />);
+  if (d?.vendor) tiles.push(<StatTile key="fu" label="Vendor follow-ups" value={d.vendor.openFollowups} hint="Open" />);
+  if (d) tiles.push(<StatTile key="low" label="Low stock" value={d.inventory.lowStock} tone="warn" hint="Stock lines to reorder" />);
 
   return (
     <>
@@ -44,6 +69,17 @@ export default async function OverviewPage() {
         </Link>
       )}
 
+      {tiles.length > 0 && (
+        <div className="mb-8 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {tiles.map((t, i) => (
+            <div key={i} style={{ animationDelay: `${i * 60}ms` }} className="animate-rise">
+              {t}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <h2 className="mb-3 font-semibold">Your modules</h2>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         {modules.map((item, i) => {
           const Icon = item.icon;
@@ -57,7 +93,7 @@ export default async function OverviewPage() {
                   </span>
                   <AccessBadge me={me} module={module} />
                 </div>
-                <h2 className="mt-4 text-lg font-semibold">{item.label}</h2>
+                <h3 className="mt-4 text-lg font-semibold">{item.label}</h3>
                 <p className="mt-1 text-sm text-ink-2">{MODULE_PLAN[module].description}</p>
               </Card>
             </Link>

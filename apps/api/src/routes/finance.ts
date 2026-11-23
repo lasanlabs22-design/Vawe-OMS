@@ -127,8 +127,20 @@ financeRoutes.get("/finance/receivables", view, async (c) => {
 /** Orders to pick from when recording a payment, return or order expense (by code, vendor, customer). */
 financeRoutes.get("/finance/order-options", view, async (c) => {
   const q = c.req.query("q")?.trim();
+  const id = c.req.query("id");
   const db = await getDb();
   const like = q ? `%${q.replace(/[%_]/g, "")}%` : null;
+  if (id && /^[0-9a-f-]{36}$/i.test(id)) {
+    const [o] = await db
+      .select({ id: orders.id, code: orders.code, vendorName: vendors.firmName, customerName: orders.customerName, total: orders.total })
+      .from(orders)
+      .innerJoin(vendors, eq(vendors.id, orders.vendorId))
+      .where(eq(orders.id, id))
+      .limit(1);
+    if (!o) return c.json([]);
+    const l = (await loadLedger(db)).find((x) => x.id === id);
+    return c.json([{ ...o, outstanding: l ? outstandingOf(l) : o.total }]);
+  }
   const rows = await db
     .select({ id: orders.id, code: orders.code, vendorName: vendors.firmName, customerName: orders.customerName, total: orders.total })
     .from(orders)
