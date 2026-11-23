@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Plus } from "lucide-react";
-import { canEdit, canView, STAGE_FLOW, STAGE_LABELS, type OrderBoard, type OrderListItem } from "@vawe/shared";
+import { canEdit, canView, STAGE_FLOW, STAGE_LABELS, type OrderBoard, type OrderInsights, type OrderListItem } from "@vawe/shared";
 import { CountUp } from "@/components/charts";
 import { LoadError, NoAccess } from "@/components/no-access";
 import { OrderTable } from "@/components/orders/order-bits";
+import { OrdersOverview } from "@/components/orders/orders-overview";
 import { PageHeader } from "@/components/ui";
 import { cx } from "@/lib/cx";
 import { PendingFrame, Tabs, UrlStateProvider } from "@/components/url-state";
@@ -14,6 +15,7 @@ import { apiGet, requireMe } from "@/lib/server-api";
 export const metadata: Metadata = { title: "Orders" };
 
 const TABS = [
+  { value: "overview", label: "Overview" },
   { value: "active", label: "Active" },
   { value: "pre", label: "Before production" },
   { value: "production", label: "In production" },
@@ -26,7 +28,27 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const me = await requireMe();
   if (!canView(me, "order")) return <NoAccess module="order" />;
   const sp = await searchParams;
-  const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "active";
+  const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "overview";
+  const header = (
+    <PageHeader title="Orders" description="Every order from design to delivery.">
+      {canEdit(me, "order") && (
+        <Link href="/orders/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-solid px-4 text-sm font-medium text-on-solid shadow-sm hover:bg-solid/85">
+          <Plus size={17} /> New order
+        </Link>
+      )}
+    </PageHeader>
+  );
+
+  if (tab === "overview") {
+    const insights = await apiGet<OrderInsights>("/v1/orders/insights");
+    return (
+      <UrlStateProvider>
+        {header}
+        <Tabs tabs={TABS} value={tab} />
+        {insights.ok ? <OrdersOverview d={insights.data} /> : <LoadError message={insights.error.error} />}
+      </UrlStateProvider>
+    );
+  }
 
   const qs = new URLSearchParams();
   if (tab === "hold") qs.set("hold", "1");
@@ -38,13 +60,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return (
     <UrlStateProvider>
-      <PageHeader title="Orders" description="Every order from design to delivery.">
-        {canEdit(me, "order") && (
-          <Link href="/orders/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-solid px-4 text-sm font-medium text-on-solid shadow-sm hover:bg-solid/85">
-            <Plus size={17} /> New order
-          </Link>
-        )}
-      </PageHeader>
+      {header}
 
       {board.ok && <Pipeline board={board.data} activeStage={sp.stage} />}
 
@@ -56,7 +72,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         {sp.stage && (
           <p className="mb-3 text-sm text-ink-2">
             Showing <span className="font-medium">{STAGE_LABELS[sp.stage as keyof typeof STAGE_LABELS] ?? sp.stage}</span> ·{" "}
-            <Link href="/orders" className="text-brand hover:underline">
+            <Link href="/orders?tab=active" className="text-brand hover:underline">
               Clear
             </Link>
           </p>
@@ -87,7 +103,7 @@ function Pipeline({ board, activeStage }: { board: OrderBoard; activeStage?: str
           return (
             <Link
               key={s}
-              href={activeStage === s ? "/orders" : `/orders?tab=all&stage=${s}`}
+              href={activeStage === s ? "/orders?tab=active" : `/orders?tab=all&stage=${s}`}
               title={STAGE_LABELS[s]}
               className={cx(
                 "group flex min-w-[74px] flex-1 flex-col justify-end rounded-xl p-2 transition-colors",
