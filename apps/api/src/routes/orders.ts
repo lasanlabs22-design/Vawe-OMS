@@ -21,6 +21,7 @@ import {
   type OrderBoard,
   type OrderDetail,
   type OrderFamily,
+  type OrderInsights,
   type OrderItemInput,
   type OrderListItem,
   type OrderStage,
@@ -147,6 +148,75 @@ orderRoutes.get("/orders/board", view, async (c) => {
   }
   const board: OrderBoard = { counts, onHold, overdueDelivery };
   return c.json(board);
+});
+
+orderRoutes.get("/orders/insights", view, async (c) => {
+  const db = await getDb();
+  const today = todayIST();
+  const now = Date.now();
+  const active = await db
+    .select({
+      id: orders.id,
+      code: orders.code,
+      stage: orders.stage,
+      onHold: orders.onHold,
+      holdReason: orders.holdReason,
+      heldAt: orders.heldAt,
+      expected: orders.expectedDelivery,
+      stageChangedAt: orders.stageChangedAt,
+      vendorName: vendors.firmName,
+    })
+    .from(orders)
+    .innerJoin(vendors, eq(vendors.id, orders.vendorId))
+    .where(sql`${orders.stage} not in ('delivered', 'cancelled')`);
+
+  const daysSince = (d: Date | null) => (d ? Math.floor((now - d.getTime()) / 86_400_000) : 0);
+  const pre = ["design", "qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment"];
+  const stageList = ORDER_STAGES.filter((s) => s !== "delivered" && s !== "cancelled");
+
+  const mixRows = active.length
+    ? await db
+        .select({ orderType: orderItems.orderType, shutters: sql<number>`sum(${orderItems.quantity})`.mapWith(Number) })
+        .from(orderItems)
+        .where(inArray(orderItems.orderId, active.map((a) => a.id)))
+        .groupBy(orderItems.orderType)
+    : [];
+
+  const from = addDays(today, -83);
+  const perDay = await db
+    .select({ date: orders.orderDate, n: sql<number>`count(*)`.mapWith(Number) })
+    .from(orders)
+    .where(and(ne(orders.stage, "cancelled"), gte(orders.orderDate, from)))
+    .groupBy(orders.orderDate);
+  const dayMap = new Map(perDay.map((r) => [r.date, r.n]));
+  const intake: OrderInsights["intake"] = [];
+  for (let d = from; d <= today; d = addDays(d, 1)) intake.push({ date: d, count: dayMap.get(d) ?? 0 });
+
+  const notOut = active.filter((a) => a.stage !== "dispatched");
+  const insights: OrderInsights = {
+    phases: {
+      pre: active.filter((a) => pre.includes(a.stage)).length,
+      production: active.filter((a) => !pre.includes(a.stage) && a.stage !== "dispatched").length,
+      dispatched: active.filter((a) => a.stage === "dispatched").length,
+    },
+    stages: stageList.map((stage) => ({ stage, count: active.filter((a) => a.stage === stage).length })),
+    delivery: {
+      late: notOut.filter((a) => a.expected && a.expected < today).length,
+      onTrack: notOut.filter((a) => a.expected && a.expected >= today).length,
+      noDate: notOut.filter((a) => !a.expected).length,
+    },
+    onHold: active
+      .filter((a) => a.onHold)
+      .map((a) => ({ id: a.id, code: a.code, vendorName: a.vendorName, reason: a.holdReason, daysHeld: daysSince(a.heldAt) }))
+      .sort((a, b) => b.daysHeld - a.daysHeld),
+    waiting: active
+      .map((a) => ({ id: a.id, code: a.code, vendorName: a.vendorName, stage: a.stage, days: daysSince(a.stageChangedAt), onHold: a.onHold }))
+      .sort((a, b) => b.days - a.days)
+      .slice(0, 6),
+    mix: mixRows.sort((a, b) => b.shutters - a.shutters),
+    intake,
+  };
+  return c.json(insights);
 });
 
 export async function loadOrderDetail(db: Db, id: string): Promise<OrderDetail | null> {

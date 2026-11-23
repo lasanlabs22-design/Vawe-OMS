@@ -256,6 +256,19 @@ export interface OrderBoard {
   overdueDelivery: number;
 }
 
+/** Everything the Orders overview draws. */
+export interface OrderInsights {
+  phases: { pre: number; production: number; dispatched: number };
+  stages: { stage: OrderStage; count: number }[];
+  delivery: { onTrack: number; late: number; noDate: number };
+  onHold: { id: string; code: string; vendorName: string; reason: string | null; daysHeld: number }[];
+  waiting: { id: string; code: string; vendorName: string; stage: OrderStage; days: number; onHold: boolean }[];
+  /** Active shutters by order type. */
+  mix: { orderType: string; shutters: number }[];
+  /** New orders per day, last 12 weeks (84 days, oldest first). */
+  intake: { date: string; count: number }[];
+}
+
 // ---------- Finance ----------
 
 export interface Receivable {
