@@ -228,7 +228,18 @@ export function Waffle({ tiles, legend }: { tiles: { label: string; color: strin
 // ---------- Calendar heatmap ----------
 
 /** Days as squares in week columns, darker for busier days (one hue, light to dark). */
-export function CalendarHeatmap({ days, label = "orders", color = "var(--chart-1)" }: { days: { date: string; count: number }[]; label?: string; color?: string }) {
+export function CalendarHeatmap({
+  days,
+  label = "orders",
+  color = "var(--chart-1)",
+  format = (n) => `${n} ${label}`,
+}: {
+  days: { date: string; count: number }[];
+  label?: string;
+  color?: string;
+  /** How a day's value reads in the tooltip (e.g. as rupees). */
+  format?: (n: number) => string;
+}) {
   const [ref, seen] = useSeen<HTMLDivElement>();
   const [hover, setHover] = useState<{ date: string; count: number } | null>(null);
   const max = Math.max(1, ...days.map((d) => d.count));
@@ -251,14 +262,14 @@ export function CalendarHeatmap({ days, label = "orders", color = "var(--chart-1
             </span>
           ))}
         </div>
-        <div className="flex min-w-0 flex-1 gap-[3px] overflow-x-auto pb-1" role="img" aria-label={`${days.reduce((s, d) => s + d.count, 0)} ${label} over the last ${days.length} days`}>
+        <div className="flex min-w-0 flex-1 gap-[3px] overflow-x-auto pb-1" role="img" aria-label={`${format(days.reduce((s, d) => s + d.count, 0))} over ${days.length} days`}>
           {weeks.map((w, wi) => (
             <div key={wi} className="grid grid-rows-7 gap-[3px]">
               {w.map((d, di) =>
                 d ? (
                   <span
                     key={d.date}
-                    title={`${fmt(d.date)}: ${d.count} ${label}`}
+                    title={`${fmt(d.date)}: ${format(d.count)}`}
                     onPointerEnter={() => setHover(d)}
                     onPointerLeave={() => setHover(null)}
                     className="size-[14px] rounded-[3px] transition-opacity"
@@ -278,7 +289,7 @@ export function CalendarHeatmap({ days, label = "orders", color = "var(--chart-1
         </div>
       </div>
       <div className="mt-3 flex items-center justify-between gap-3 text-[12px] text-ink-3">
-        <span className="min-h-4">{hover ? `${fmt(hover.date)}: ${hover.count} ${label}` : "Hover a day for details"}</span>
+        <span className="min-h-4">{hover ? `${fmt(hover.date)}: ${format(hover.count)}` : "Hover a day for details"}</span>
         <span className="flex items-center gap-1">
           Less
           {[0, 1, 2, 3, 4].map((l) => (
@@ -371,6 +382,139 @@ export function StageFlow({ stages, groups }: { stages: { label: string; count: 
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------- Mirrored columns ----------
+
+/**
+ * Money in above the line, money out below it, one pair per day. Hover a day for both values.
+ * Two series on one shared scale (same unit), so one axis.
+ */
+export function MirrorColumns({
+  points,
+  upLabel,
+  downLabel,
+  upColor = "var(--chart-1)",
+  downColor = "var(--chart-2)",
+  format = (n) => n.toLocaleString("en-IN"),
+  height = 220,
+}: {
+  points: { label: string; title: string; up: number; down: number }[];
+  upLabel: string;
+  downLabel: string;
+  upColor?: string;
+  downColor?: string;
+  format?: (n: number) => string;
+  height?: number;
+}) {
+  const [ref, seen] = useSeen<HTMLDivElement>();
+  const [hover, setHover] = useState<number | null>(null);
+  const max = Math.max(1, ...points.map((p) => Math.max(p.up, p.down)));
+  const half = (height - 24) / 2;
+  const showEvery = Math.ceil(points.length / 12);
+  const h = hover !== null ? points[hover] : null;
+  return (
+    <div ref={ref}>
+      <div className="relative flex items-center gap-[3px]" style={{ height: height - 24 }} role="img" aria-label={`${upLabel} and ${downLabel} per day`}>
+        <div aria-hidden className="absolute inset-x-0 top-1/2 h-px bg-line" />
+        {points.map((p, i) => (
+          <div
+            key={p.title}
+            className="relative flex h-full min-w-0 flex-1 flex-col"
+            onPointerEnter={() => setHover(i)}
+            onPointerLeave={() => setHover(null)}
+          >
+            <div className="flex flex-1 items-end justify-center">
+              <span
+                className="w-full max-w-4 rounded-t-[3px]"
+                style={{ background: upColor, height: seen ? `${(p.up / max) * half}px` : 0, opacity: hover === null || hover === i ? 1 : 0.4, transition: `height 700ms ${EASE} ${i * 12}ms, opacity 150ms` }}
+              />
+            </div>
+            <div className="flex flex-1 items-start justify-center">
+              <span
+                className="w-full max-w-4 rounded-b-[3px]"
+                style={{ background: downColor, height: seen ? `${(p.down / max) * half}px` : 0, opacity: hover === null || hover === i ? 1 : 0.4, transition: `height 700ms ${EASE} ${i * 12}ms, opacity 150ms` }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="mt-1 flex gap-[3px] text-[10.5px] text-ink-3">
+        {points.map((p, i) => (
+          <span key={p.title} className="min-w-0 flex-1 text-center whitespace-nowrap">
+            {i % showEvery === 0 ? p.label : ""}
+          </span>
+        ))}
+      </div>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
+        <div className="flex gap-4">
+          <span className="flex items-center gap-1.5 text-ink-2">
+            <span aria-hidden className="size-2.5 rounded-[3px]" style={{ background: upColor }} /> {upLabel} (above)
+          </span>
+          <span className="flex items-center gap-1.5 text-ink-2">
+            <span aria-hidden className="size-2.5 rounded-[3px]" style={{ background: downColor }} /> {downLabel} (below)
+          </span>
+        </div>
+        <span className="text-ink-3">{h ? `${h.title}: ${format(h.up)} in, ${format(h.down)} out` : "Hover a day for details"}</span>
+      </div>
+    </div>
+  );
+}
+
+// ---------- Concentric arcs ----------
+
+/**
+ * Categories as rings around one centre, longest arc = biggest amount. One colour; each ring is
+ * named at its start, so identity never depends on colour.
+ */
+export function RadialBars({ rows, color = "var(--chart-2)", size = 220, format = (n) => n.toLocaleString("en-IN") }: { rows: { label: string; value: number }[]; color?: string; size?: number; format?: (n: number) => string }) {
+  const [ref, seen] = useSeen<HTMLDivElement>();
+  const sorted = [...rows].sort((a, b) => b.value - a.value);
+  const max = Math.max(1, ...sorted.map((r) => r.value));
+  const ring = 14;
+  const gap = 6;
+  const c = size / 2;
+  return (
+    <div ref={ref} className="flex flex-col items-center gap-4 sm:flex-row sm:items-center">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="shrink-0" role="img" aria-label={sorted.map((r) => `${r.label}: ${format(r.value)}`).join(", ")}>
+        {sorted.map((r, i) => {
+          const radius = c - ring / 2 - i * (ring + gap);
+          if (radius < ring) return null;
+          const circ = 2 * Math.PI * radius;
+          const share = (r.value / max) * 0.75; // the longest ring covers three quarters of a turn
+          return (
+            <g key={r.label} transform={`rotate(-90 ${c} ${c})`}>
+              <circle cx={c} cy={c} r={radius} fill="none" stroke="var(--surface-2)" strokeWidth={ring} strokeDasharray={`${0.75 * circ} ${circ}`} strokeLinecap="round" />
+              {/* A zero draws nothing (a round cap on an empty arc would show as a dot). */}
+              {r.value > 0 && (
+                <circle
+                  cx={c}
+                  cy={c}
+                  r={radius}
+                  fill="none"
+                  stroke={color}
+                  strokeOpacity={1 - i * 0.13}
+                  strokeWidth={ring}
+                  strokeLinecap="round"
+                  strokeDasharray={`${seen ? share * circ : 0} ${circ}`}
+                  style={{ transition: `stroke-dasharray 1000ms ${EASE} ${i * 120}ms` }}
+                />
+              )}
+            </g>
+          );
+        })}
+      </svg>
+      <ul className="w-full min-w-0 space-y-1.5">
+        {sorted.map((r, i) => (
+          <li key={r.label} className="flex items-center gap-2 text-[13px]">
+            <span aria-hidden className="w-4 shrink-0 text-center text-[11px] font-semibold text-ink-3">{i + 1}</span>
+            <span className="min-w-0 flex-1 truncate text-ink-2">{r.label}</span>
+            <span className="font-semibold tabular-nums">{format(r.value)}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

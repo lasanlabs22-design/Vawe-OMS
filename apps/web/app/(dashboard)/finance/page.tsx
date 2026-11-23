@@ -13,13 +13,14 @@ import {
   type Receivable,
   type ReturnView,
 } from "@vawe/shared";
-import { BarList, ChartCard, ColumnChart, StatTile, TrendChart } from "@/components/charts";
+import { StatTile } from "@/components/charts";
 import { AddExpense, AddPurchase, AddReturn, DeleteRow, RecordPayment } from "@/components/finance/finance-forms";
+import { FinanceOverview } from "@/components/finance/finance-overview";
 import { LoadError, NoAccess } from "@/components/no-access";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { DateRange, PendingFrame, Tabs, UrlStateProvider } from "@/components/url-state";
 import { cx } from "@/lib/cx";
-import { dayLabel, dayLong, isDay, monthStart, rangePresets, todayIST } from "@/lib/dates";
+import { dayLabel, isDay, monthStart, rangePresets, todayIST } from "@/lib/dates";
 import { money } from "@/lib/format";
 import { apiGet, requireMe } from "@/lib/server-api";
 
@@ -64,48 +65,7 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
     body = (
       <div className="space-y-5">
         {rangePicker}
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile label="Payments received" value={s.received} format="moneyShort" hint={`${dayLabel(s.from)} – ${dayLabel(s.to)}`} />
-          <StatTile label="To be received" value={s.receivable} format="moneyShort" hint="All open orders" delay={60} />
-          <StatTile label="Delivered, not paid" value={s.deliveredUnpaid.amount} format="moneyShort" hint={`${s.deliveredUnpaid.count} order${s.deliveredUnpaid.count === 1 ? "" : "s"}`} tone="warn" delay={120} />
-          <StatTile label="Overdue" value={s.overdue} format="moneyShort" hint="Past the due date" tone="bad" delay={180} />
-        </div>
-        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-          <StatTile label="Expenses" value={s.expenseTotal} format="moneyShort" hint="In this range" />
-          <StatTile label="Returns (credit)" value={s.returns} format="moneyShort" hint="In this range" delay={60} />
-          <StatTile label="Purchases" value={s.purchases} format="moneyShort" hint="In this range" delay={120} />
-          <StatTile label="Net cash in" value={s.received - s.expenseTotal - s.purchases} format="moneyShort" hint="Received − expenses − purchases" delay={180} />
-        </div>
-
-        <ChartCard
-          title="Money in and out per day"
-          subtitle={`${dayLong(s.from)} → ${dayLong(s.to)}`}
-          legend={[
-            { label: "Received", color: "var(--chart-1)" },
-            { label: "Expenses", color: "var(--chart-2)" },
-          ]}
-          table={{ columns: ["Day", "Received", "Expenses"], rows: s.daily.map((d) => [dayLong(d.date), money(d.received), money(d.expenses)]) }}
-        >
-          <TrendChart points={s.daily.map((d) => ({ label: dayLabel(d.date), a: d.received, b: d.expenses, title: dayLong(d.date) }))} aLabel="received" bLabel="expenses" valueFormat="money" height={260} />
-        </ChartCard>
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <ChartCard title="How long money has been owed" subtitle="Open balances by days past the due date">
-            <BarList rows={s.aging.map((a) => ({ label: a.label, value: a.amount, sub: `${a.count} order${a.count === 1 ? "" : "s"}`, muted: a.amount === 0 }))} format="money" />
-          </ChartCard>
-          <ChartCard title="Expenses by type" subtitle="In this range">
-            <BarList rows={s.expenses.map((e) => ({ label: EXPENSE_LABELS[e.category], value: e.amount, muted: e.amount === 0 }))} format="money" />
-          </ChartCard>
-        </div>
-
-        <div className="grid gap-5 lg:grid-cols-2">
-          <ChartCard title="Daily production expense" subtitle="Labour, power and consumables, per day" table={{ columns: ["Day", "Production expense"], rows: production.map((p) => [dayLong(p.date), money(p.value)]) }}>
-            <ColumnChart data={production.map((p) => ({ label: p.date.slice(8, 10).replace(/^0/, ""), value: p.value, tooltip: dayLong(p.date) }))} valueFormat="money" />
-          </ChartCard>
-          <ChartCard title="Payments by method" subtitle="In this range">
-            <BarList rows={s.receivedByMethod.map((m) => ({ label: PAYMENT_METHOD_LABELS[m.method], value: m.amount, muted: m.amount === 0 }))} format="money" />
-          </ChartCard>
-        </div>
+        <FinanceOverview s={s} production={production} />
       </div>
     );
   } else if (tab === "receivables") {
