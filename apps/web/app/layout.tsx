@@ -1,0 +1,31 @@
+import type { Metadata, Viewport } from "next";
+import { DM_Serif_Display, Inter } from "next/font/google";
+import "./globals.css";
+
+// Same type as the Vawe website: Inter for the interface, DM Serif Display for a few big headings.
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const serif = DM_Serif_Display({ subsets: ["latin"], weight: "400", variable: "--font-dm-serif" });
+
+export const metadata: Metadata = {
+  title: { default: "Vawe OMS", template: "%s · Vawe OMS" },
+  description: "Order management for Vawe Interio",
+  icons: { icon: "/brand/vawe-mark.png" },
+  robots: { index: false, follow: false },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f5f1ec" },
+    { media: "(prefers-color-scheme: dark)", color: "#0b0b0c" },
+  ],
+};
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en" className={`${inter.variable} ${serif.variable}`}>
+      <body className="min-h-dvh font-sans">{children}</body>
+    </html>
+  );
+}
