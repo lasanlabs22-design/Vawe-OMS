@@ -369,6 +369,15 @@ export interface SalesRange {
   previousTotals: { orders: number; value: number };
 }
 
+/** One chosen day in the "compare days" view: totals and the orders placed that day. */
+export interface SalesDay {
+  date: string;
+  orders: number;
+  value: number;
+  shutters: number;
+  list: { id: string; code: string; vendorName: string; customerName: string | null; value: number }[];
+}
+
 export interface ProductStat {
   name: string;
   orders: number;

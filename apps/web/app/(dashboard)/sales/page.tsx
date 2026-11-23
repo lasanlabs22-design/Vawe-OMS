@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { canView, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
+import { canView, type SalesDay, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
 import { LoadError, NoAccess } from "@/components/no-access";
-import { SalesDayByDay, SalesOverviewView, SalesProductsView, SalesSourcesView } from "@/components/sales/sales-views";
+import { SalesCompareDays, SalesDayByDay, SalesOverviewView, SalesProductsView, SalesSourcesView } from "@/components/sales/sales-views";
 import { PageHeader } from "@/components/ui";
 import { PendingFrame, Tabs, UrlStateProvider } from "@/components/url-state";
 import { addMonths, addDays, isDay, todayIST } from "@/lib/dates";
@@ -12,11 +12,12 @@ export const metadata: Metadata = { title: "Sales" };
 const TABS = [
   { value: "overview", label: "This month" },
   { value: "days", label: "Day by day" },
+  { value: "compare", label: "Compare days" },
   { value: "products", label: "Products" },
   { value: "sources", label: "Sources" },
 ];
 
-type Search = { tab?: string; month?: string; from?: string; to?: string };
+type Search = { tab?: string; month?: string; from?: string; to?: string; dates?: string };
 
 export default async function SalesPage({ searchParams }: { searchParams: Promise<Search> }) {
   const me = await requireMe();
@@ -36,6 +37,12 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
     const from = isDay(sp.from) ? sp.from : addMonths(to, -1);
     const data = await apiGet<SalesRange>(`/v1/sales/range?from=${from}&to=${to}`);
     body = data.ok ? <SalesDayByDay data={data.data} /> : <LoadError message={data.error.error} />;
+  } else if (tab === "compare") {
+    // Default: today and the same day in the two months before (e.g. 23 Sept, 23 Oct, 23 Nov).
+    const picked = (sp.dates ?? "").split(",").filter(isDay);
+    const dates = picked.length ? picked : [addMonths(today, -2), addMonths(today, -1), today];
+    const data = await apiGet<SalesDay[]>(`/v1/sales/days?dates=${dates.join(",")}`);
+    body = data.ok ? <SalesCompareDays days={data.data} canOpenOrders={canView(me, "order")} /> : <LoadError message={data.error.error} />;
   } else {
     const to = isDay(sp.to) ? sp.to : today;
     const from = isDay(sp.from) ? sp.from : addDays(today, -89);
