@@ -58,7 +58,7 @@ function PermissionGrid({ role, value, onChange }: { role: Role; value: Permissi
                   onClick={() => set(m, l.value)}
                   className={cx(
                     "h-8 min-w-14 rounded-md px-2.5 text-[13px] font-medium transition-all",
-                    current === l.value ? (l.value === "none" ? "bg-surface text-ink shadow-sm" : "bg-brand text-white shadow-sm") : "text-ink-3 hover:text-ink",
+                    current === l.value ? (l.value === "none" ? "bg-surface text-ink shadow-sm" : "bg-solid text-on-solid shadow-sm") : "text-ink-3 hover:text-ink",
                   )}
                 >
                   {l.label}
@@ -271,7 +271,7 @@ export function TeamList({ team, me }: { team: TeamMember[]; me: Me }) {
         {team.map((m, i) => {
           const self = m.id === me.id;
           return (
-            <Card key={m.id} className={cx("animate-rise p-4 sm:p-5", !m.isActive && "opacity-70")}>
+            <Card key={m.id} className={cx("animate-rise min-w-0 p-4 sm:p-5", !m.isActive && "opacity-70")}>
               <div style={{ animationDelay: `${i * 40}ms` }} className="flex flex-col gap-4 lg:flex-row lg:items-center">
                 <div className="flex min-w-0 flex-1 items-center gap-3">
                   <Avatar name={m.name} src={m.photoUrl} size={44} />

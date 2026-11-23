@@ -49,7 +49,7 @@ export default async function VendorsPage({ searchParams }: { searchParams: Prom
     <UrlStateProvider>
       <PageHeader title="Vendors" description="B2B vendors, what they owe and how they pay.">
         {editable && (
-          <Link href="/vendors/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-strong">
+          <Link href="/vendors/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-solid px-4 text-sm font-medium text-on-solid shadow-sm hover:bg-solid/85">
             <Plus size={17} /> Add vendor
           </Link>
         )}

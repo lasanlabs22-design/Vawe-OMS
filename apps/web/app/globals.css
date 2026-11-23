@@ -1,12 +1,16 @@
 @import "tailwindcss";
 
-/* Design tokens, taken from the Vawe website (Vawe Pink and onyx on warm porcelain). Components use
-   the Tailwind names below (bg-surface, text-ink-2, border-line…), so a theme change only touches
-   these variables. Dark mode follows the device setting. */
+/* Design tokens: onyx black and brass on warm porcelain, a traditional look. The only pink is the
+   logo itself. Components use the Tailwind names below (bg-surface, text-ink-2, border-line…), so a
+   theme change only touches these variables. Dark mode follows the device setting.
+     solid  buttons and selected states (onyx; porcelain in dark mode), text on it is on-solid
+     brand  the brass accent: links, highlights, the active menu item */
 :root {
-  --brand: #e6005b; /* Vawe CTA pink: white text on it passes contrast */
-  --brand-strong: #c2004d;
-  --brand-soft: #fde4ee;
+  --solid: #161618;
+  --on-solid: #f5f1ec;
+  --brand: #8a5f12; /* deep brass: readable as text on white and porcelain */
+  --brand-strong: #6f4c0e;
+  --brand-soft: #f3ead8;
   --onyx: #0b0b0c;
   --bg: #f5f1ec; /* porcelain */
   --surface: #ffffff;
@@ -17,12 +21,12 @@
   --ink-3: #8a8a8f;
   --good: #0f8a4f;
   --good-soft: #e3f5ec;
-  --warn: #a86300;
-  --warn-soft: #fdf1dc;
+  --warn: #b4530a; /* burnt orange: kept apart from the brass accent */
+  --warn-soft: #fbeadb;
   --bad: #c8233a;
   --bad-soft: #fce6e9;
-  /* Chart series (validated for colour-blind separation on this surface): pink, then blue. */
-  --chart-1: #e6005b;
+  /* Chart series (validated for colour-blind separation on this surface): brass, then blue. */
+  --chart-1: #b07a1e;
   --chart-2: #2a78d6;
   --chart-grid: #ece7e0;
   color-scheme: light;
@@ -30,9 +34,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #f2357a;
-    --brand-strong: #ff8fb8;
-    --brand-soft: #3a0f22;
+    --solid: #f5f1ec;
+    --on-solid: #161618;
+    --brand: #d4a548;
+    --brand-strong: #e6c27a;
+    --brand-soft: #2a2213;
     --bg: #0b0b0c; /* onyx */
     --surface: #141416;
     --surface-2: #1f1f22;
@@ -42,11 +48,11 @@
     --ink-3: #807c77;
     --good: #45c486;
     --good-soft: #10271c;
-    --warn: #e3a440;
-    --warn-soft: #2b2010;
+    --warn: #f08a4b;
+    --warn-soft: #2d1a0e;
     --bad: #ff6b7d;
     --bad-soft: #2e1218;
-    --chart-1: #f2357a;
+    --chart-1: #b8872e;
     --chart-2: #3987e5;
     --chart-grid: #26262b;
     color-scheme: dark;
@@ -61,7 +67,9 @@
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-grid: var(--chart-grid);
-  --color-pink: #fa0365;
+  --color-solid: var(--solid);
+  --color-on-solid: var(--on-solid);
+  --color-gold: #c9a35b; /* brass on the black sign-in panel */
   --font-display: var(--font-dm-serif), Georgia, serif;
   --color-bg: var(--bg);
   --color-surface: var(--surface);

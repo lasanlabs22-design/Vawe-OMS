@@ -199,7 +199,7 @@ export function SalesProductsView({ data, from, to }: { data: SalesProducts; fro
               role="radio"
               aria-checked={dim === d.key}
               onClick={() => setDim(d.key)}
-              className={cx("h-8 rounded-md px-3 text-[13px] font-medium", dim === d.key ? "bg-brand text-white" : "text-ink-2 hover:text-ink")}
+              className={cx("h-8 rounded-md px-3 text-[13px] font-medium", dim === d.key ? "bg-solid text-on-solid" : "text-ink-2 hover:text-ink")}
             >
               {d.label}
             </button>
