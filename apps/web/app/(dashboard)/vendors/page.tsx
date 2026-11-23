@@ -10,6 +10,7 @@ import { PendingFrame, Tabs, UrlStateProvider } from "@/components/url-state";
 import { HealthBadge } from "@/components/vendors/vendor-bits";
 import { AddFollowupButton, FollowupList } from "@/components/vendors/followups";
 import { VendorSearch } from "@/components/vendors/vendor-search";
+import { VendorsOverview } from "@/components/vendors/vendors-overview";
 import { money, phone } from "@/lib/format";
 import { dayLabel } from "@/lib/dates";
 import { apiGet, requireMe } from "@/lib/server-api";
@@ -17,6 +18,7 @@ import { apiGet, requireMe } from "@/lib/server-api";
 export const metadata: Metadata = { title: "Vendors" };
 
 const TABS = [
+  { value: "overview", label: "Overview" },
   { value: "all", label: "All vendors" },
   { value: "attention", label: "Needs attention" },
   { value: "followups", label: "Communication" },
@@ -27,7 +29,7 @@ export default async function VendorsPage({ searchParams }: { searchParams: Prom
   if (!canView(me, "vendor")) return <NoAccess module="vendor" />;
   const editable = canEdit(me, "vendor");
   const sp = await searchParams;
-  const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "all";
+  const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "overview";
 
   const [vendors, followups, people] = await Promise.all([
     apiGet<VendorListItem[]>("/v1/vendors"),
@@ -65,6 +67,8 @@ export default async function VendorsPage({ searchParams }: { searchParams: Prom
       <Tabs tabs={TABS} value={tab} />
 
       <PendingFrame>
+        {tab === "overview" && <VendorsOverview vendors={all} followups={open} />}
+
         {tab === "all" && (
           <>
             <div className="mb-4">

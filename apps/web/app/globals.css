@@ -98,6 +98,16 @@
   --animate-rise: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-fade: fade 300ms ease-out both;
   --animate-drift: drift 18s ease-in-out infinite alternate;
+  --animate-grow-x: grow-x 900ms cubic-bezier(0.22, 1, 0.36, 1) both;
+
+  @keyframes grow-x {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
 
   @keyframes rise {
     from {
