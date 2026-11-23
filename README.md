@@ -7,7 +7,11 @@ Order management for Vawe Interio: orders from design to delivery, vendors and t
 | `app.vaweinterio.in` | Vawe admins and staff | Sign-in and the dashboard: Sales, Vendors, Orders, Finance, Inventory |
 | `ops.vaweinterio.in` | Admins only | Add people, set each person's access, reset passwords, activity log |
 
-Admins see and change everything. Staff get **view** or **edit** on Sales, Vendors, Orders and Finance, set per person in ops. Inventory is a fixed rule: everyone views it, only admins change stock.
+Each person, admin or staff, gets **none**, **view** or **edit** on Sales, Vendors, Orders and Finance, set in ops. Admins also get two admin-only settings:
+- **Inventory:** view or edit. Edit lets them change stock.
+- **Catalogue & prices:** none, view or edit. Covers the order-form options, the price lists and vendor rates.
+
+Everyone can view Inventory. Staff can never change stock or prices. Every admin can use the ops console to manage people.
 
 Defaults chosen for questions still open with the client are listed in [docs/DECISIONS.md](docs/DECISIONS.md).
 

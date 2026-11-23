@@ -1,6 +1,6 @@
 import { createMiddleware } from "hono/factory";
 import { getDb } from "@vawe/db";
-import { canEdit, canView, type Module } from "@vawe/shared";
+import { canEdit, canView, settingsAccess, type Module } from "@vawe/shared";
 import { fail } from "../lib/http";
 import { readSession } from "../lib/sessions";
 import type { AppEnv, Scope } from "../types";
@@ -22,9 +22,15 @@ export const requireSession = (scope: Scope, { allowPasswordChange = false } = {
     await next();
   });
 
-/** Admin-only dashboard actions (catalogue, price lists, stock changes). */
+/** Admin-only dashboard actions (e.g. deleting a payment entered by mistake). */
 export const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
   if (c.get("user").role !== "admin") fail(403, "Only admins can do this", { code: "FORBIDDEN" });
+  await next();
+});
+
+/** Changing the catalogue, price lists and company details: admins with Catalogue & prices: edit. */
+export const requireSettingsEdit = createMiddleware<AppEnv>(async (c, next) => {
+  if (settingsAccess(c.get("user")) !== "edit") fail(403, "You need edit access to Catalogue & prices for this", { code: "FORBIDDEN" });
   await next();
 });
 

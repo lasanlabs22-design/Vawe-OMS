@@ -40,7 +40,8 @@ export default async function FinancePage({ searchParams }: { searchParams: Prom
   const me = await requireMe();
   if (!canView(me, "finance")) return <NoAccess module="finance" />;
   const editable = canEdit(me, "finance");
-  const isAdmin = me.role === "admin";
+  // Deleting a payment or expense entered by mistake: admins with Finance edit.
+  const isAdmin = me.role === "admin" && editable;
   const sp = await searchParams;
   const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "overview";
   const today = todayIST();

@@ -17,7 +17,7 @@ export default async function EditVendorPage({ params }: { params: Promise<{ id:
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title={`Edit ${res.data.firmName}`} description={res.data.code} />
-      <VendorForm vendor={res.data} isAdmin={me.role === "admin"} defaultRates={defaults.ok ? defaults.data : {}} />
+      <VendorForm vendor={res.data} isAdmin={me.settings === "edit"} defaultRates={defaults.ok ? defaults.data : {}} />
     </div>
   );
 }

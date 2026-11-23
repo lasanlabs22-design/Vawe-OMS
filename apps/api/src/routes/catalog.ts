@@ -4,7 +4,7 @@ import { catalogOptions, getDb, type CatalogOption } from "@vawe/db";
 import { catalogCreateSchema, catalogUpdateSchema, companySchema, ratesSchema, type Catalog, type CatalogItem } from "@vawe/shared";
 import { fail, idParam, readBody } from "../lib/http";
 import { getCompany, getDefaultRates, putSetting, SETTING_COMPANY, SETTING_DEFAULT_RATES } from "../lib/settings";
-import { requireAdmin } from "../middleware/auth";
+import { requireSettingsEdit } from "../middleware/auth";
 import type { AppEnv } from "../types";
 
 // The catalogue (order types, frames, glass…: the workbook's Mapping sheet) and app settings. Everyone
@@ -33,7 +33,7 @@ export async function loadCatalog(): Promise<Catalog> {
 
 catalogRoutes.get("/catalog", async (c) => c.json(await loadCatalog()));
 
-catalogRoutes.post("/catalog", requireAdmin, async (c) => {
+catalogRoutes.post("/catalog", requireSettingsEdit, async (c) => {
   const input = await readBody(c, catalogCreateSchema);
   if (input.kind === "order_type" && !input.family) fail(400, "Choose how this order type is priced", { field: "family" });
   if (input.kind === "glass_type" && !input.glassGroup) fail(400, "Choose which rate this glass uses", { field: "glassGroup" });
@@ -58,7 +58,7 @@ catalogRoutes.post("/catalog", requireAdmin, async (c) => {
   return c.json(row, 201);
 });
 
-catalogRoutes.patch("/catalog/:id", requireAdmin, async (c) => {
+catalogRoutes.patch("/catalog/:id", requireSettingsEdit, async (c) => {
   const id = idParam(c);
   const input = await readBody(c, catalogUpdateSchema);
   const db = await getDb();
@@ -71,7 +71,7 @@ catalogRoutes.patch("/catalog/:id", requireAdmin, async (c) => {
 
 catalogRoutes.get("/settings/rates", async (c) => c.json(await getDefaultRates(await getDb())));
 
-catalogRoutes.put("/settings/rates", requireAdmin, async (c) => {
+catalogRoutes.put("/settings/rates", requireSettingsEdit, async (c) => {
   const rates = await readBody(c, ratesSchema);
   await putSetting(await getDb(), SETTING_DEFAULT_RATES, rates, c.get("user").id);
   return c.json(rates);
@@ -79,7 +79,7 @@ catalogRoutes.put("/settings/rates", requireAdmin, async (c) => {
 
 catalogRoutes.get("/settings/company", async (c) => c.json(await getCompany(await getDb())));
 
-catalogRoutes.put("/settings/company", requireAdmin, async (c) => {
+catalogRoutes.put("/settings/company", requireSettingsEdit, async (c) => {
   const company = await readBody(c, companySchema);
   await putSetting(await getDb(), SETTING_COMPANY, company, c.get("user").id);
   return c.json(company);

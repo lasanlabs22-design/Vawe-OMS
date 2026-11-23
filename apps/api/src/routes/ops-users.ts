@@ -3,13 +3,16 @@ import { alias } from "drizzle-orm/pg-core";
 import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
 import { activityLog, getDb, userPermissions, userPhotos, users, type Db } from "@vawe/db";
 import {
+  cleanPermissions,
   createUserSchema,
-  GRANTABLE_MODULES,
+  FULL_ADMIN_PERMISSIONS,
+  PERMISSION_KEYS,
   updateUserSchema,
   type ActivityEntry,
-  type GrantableModule,
   type IssuedCredentials,
+  type PermissionKey,
   type Permissions,
+  type Role,
   type TeamMember,
 } from "@vawe/shared";
 import { env } from "../env";
@@ -33,15 +36,17 @@ async function permissionsByUser(db: Db): Promise<Map<string, Permissions>> {
   const map = new Map<string, Permissions>();
   for (const r of rows) {
     const p = map.get(r.userId) ?? {};
-    p[r.module as GrantableModule] = r.level;
+    p[r.module as PermissionKey] = r.level;
     map.set(r.userId, p);
   }
   return map;
 }
 
-async function replacePermissions(db: Db, userId: string, permissions: Permissions): Promise<void> {
+/** Saves someone's access. Staff can't hold the admin-only keys (stock, catalogue & prices). */
+async function replacePermissions(db: Db, userId: string, role: Role, given: Permissions): Promise<void> {
+  const permissions = cleanPermissions(role, given);
   await db.delete(userPermissions).where(eq(userPermissions.userId, userId));
-  const rows = GRANTABLE_MODULES.filter((m) => permissions[m]).map((module) => ({
+  const rows = PERMISSION_KEYS.filter((m) => permissions[m]).map((module) => ({
     userId,
     module,
     level: permissions[module]!,
@@ -83,7 +88,7 @@ opsUsers.get("/users", async (c) => {
     department: u.department,
     photoUrl: photoUrl("ops", u.id, photoAt),
     role: u.role,
-    permissions: u.role === "admin" ? {} : (perms.get(u.id) ?? {}),
+    permissions: perms.get(u.id) ?? {},
     isActive: u.isActive,
     mustChangePassword: u.mustChangePassword,
     lockedUntil: u.lockedUntil && u.lockedUntil > new Date() ? u.lockedUntil.toISOString() : null,
@@ -102,6 +107,8 @@ opsUsers.post("/users", async (c) => {
   const [taken] = await db.select({ id: users.id }).from(users).where(eq(users.email, input.email)).limit(1);
   if (taken) fail(409, "That email already has an account", { field: "email" });
 
+  // A new admin with nothing chosen gets edit everywhere; otherwise exactly what was chosen.
+  const granted = input.role === "admin" && !Object.values(input.permissions).some(Boolean) ? FULL_ADMIN_PERMISSIONS : cleanPermissions(input.role, input.permissions);
   const password = temporaryPassword();
   const created = await db.transaction(async (tx) => {
     const [user] = await tx
@@ -116,7 +123,7 @@ opsUsers.post("/users", async (c) => {
         createdBy: me.id,
       })
       .returning();
-    if (input.role === "staff") await replacePermissions(tx as unknown as Db, user!.id, input.permissions);
+    await replacePermissions(tx as unknown as Db, user!.id, input.role, granted);
     return user!;
   });
 
@@ -124,7 +131,7 @@ opsUsers.post("/users", async (c) => {
     action: "user.created",
     actorId: me.id,
     targetUserId: created.id,
-    meta: { role: input.role, permissions: input.role === "staff" ? input.permissions : "all" },
+    meta: { role: input.role, permissions: granted },
     ip: clientIp(c),
   });
 
@@ -162,12 +169,13 @@ opsUsers.patch("/users/:id", async (c) => {
     if (role !== target.role) patch.role = changes.role = role;
     if (Object.keys(patch).length) await t.update(users).set({ ...patch, updatedAt: new Date() }).where(eq(users.id, id));
 
-    if (role === "admin") {
-      // Admins can do everything; stored grants would only confuse a later demotion.
-      await t.delete(userPermissions).where(eq(userPermissions.userId, id));
-    } else if (input.permissions) {
-      await replacePermissions(t, id, input.permissions);
-      changes.permissions = input.permissions;
+    if (input.permissions) {
+      await replacePermissions(t, id, role, input.permissions);
+      changes.permissions = cleanPermissions(role, input.permissions);
+    } else if (role !== target.role) {
+      // Promoted without choosing: full edit. Demoted: keep their module access, drop admin-only keys.
+      const current = (await permissionsByUser(t)).get(id) ?? {};
+      await replacePermissions(t, id, role, role === "admin" ? FULL_ADMIN_PERMISSIONS : current);
     }
   });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { ACCESS_LEVELS, GRANTABLE_MODULES, ROLES } from "./access";
+import { ACCESS_LEVELS, PERMISSION_KEYS, ROLES } from "./access";
 import { passwordProblem } from "./passwords";
 
 const email = z
@@ -22,7 +22,7 @@ const phone = z
   .pipe(z.string().regex(/^[6-9]\d{9}$/, "Enter a 10-digit mobile number"));
 
 export const permissionsSchema = z
-  .object(Object.fromEntries(GRANTABLE_MODULES.map((m) => [m, z.enum(ACCESS_LEVELS).optional()])))
+  .object(Object.fromEntries(PERMISSION_KEYS.map((m) => [m, z.enum(ACCESS_LEVELS).optional()])))
   .strict();
 
 export const loginSchema = z.object({

@@ -5,6 +5,7 @@ import { getDb, users, vendorFollowups, vendors, type Db, type Vendor } from "@v
 import {
   followupSchema,
   followupUpdateSchema,
+  settingsAccess,
   vendorSchema,
   type Followup,
   type OrderListItem,
@@ -17,7 +18,7 @@ import { lookupGstin } from "../lib/gst";
 import { fail, idParam, readBody } from "../lib/http";
 import { loadLedger, vendorStats } from "../lib/ledger";
 import { requireAccess } from "../middleware/auth";
-import type { AppEnv } from "../types";
+import type { AppEnv, AuthedUser } from "../types";
 import { listOrders } from "./orders";
 
 export const vendorRoutes = new Hono<AppEnv>();
@@ -109,17 +110,18 @@ vendorRoutes.post("/gst/lookup", view, async (c) => {
   return c.json(await lookupGstin(body.gstin));
 });
 
-function onlyAdminsSetPrices(role: string, input: { rates?: unknown; discountPercent?: number }, existing?: Vendor) {
-  if (role === "admin") return;
+// Prices and discounts belong to Catalogue & prices: admins with edit access there.
+function onlyAdminsSetPrices(user: AuthedUser, input: { rates?: unknown; discountPercent?: number }, existing?: Vendor) {
+  if (settingsAccess(user) === "edit") return;
   const ratesChanged = input.rates !== undefined && JSON.stringify(input.rates) !== JSON.stringify(existing?.rates ?? {});
   const discountChanged = input.discountPercent !== undefined && input.discountPercent !== (existing?.discountPercent ?? 0);
-  if (ratesChanged || discountChanged) fail(403, "Only admins can change a vendor's prices or discount");
+  if (ratesChanged || discountChanged) fail(403, "Only admins with edit access to Catalogue & prices can change a vendor's prices or discount");
 }
 
 vendorRoutes.post("/vendors", edit, async (c) => {
   const me = c.get("user");
   const input = await readBody(c, vendorSchema);
-  onlyAdminsSetPrices(me.role, { rates: input.rates && Object.keys(input.rates).length ? input.rates : undefined, discountPercent: input.discountPercent || undefined });
+  onlyAdminsSetPrices(me, { rates: input.rates && Object.keys(input.rates).length ? input.rates : undefined, discountPercent: input.discountPercent || undefined });
   const db = await getDb();
   const dupe = await db
     .select({ id: vendors.id })
@@ -194,7 +196,7 @@ vendorRoutes.patch("/vendors/:id", edit, async (c) => {
   const db = await getDb();
   const [existing] = await db.select().from(vendors).where(eq(vendors.id, id)).limit(1);
   if (!existing) fail(404, "Vendor not found");
-  onlyAdminsSetPrices(me.role, input, existing);
+  onlyAdminsSetPrices(me, input, existing);
   if (input.firmName && input.firmName.toLowerCase() !== existing.firmName.toLowerCase()) {
     const dupe = await db
       .select({ id: vendors.id })

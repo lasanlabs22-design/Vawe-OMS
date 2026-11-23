@@ -2,13 +2,16 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Copy, KeyRound, Pause, Pencil, Play, Plus, ShieldCheck } from "lucide-react";
+import { Check, Copy, KeyRound, Pause, Pencil, Play, Plus } from "lucide-react";
 import {
+  FULL_ADMIN_PERMISSIONS,
   GRANTABLE_MODULES,
   MODULE_LABELS,
+  PERMISSION_KEYS,
+  PERMISSION_LABELS,
   type AccessLevel,
-  type GrantableModule,
   type IssuedCredentials,
+  type PermissionKey,
   type Me,
   type Permissions,
   type Role,
@@ -26,52 +29,59 @@ const LEVELS: { value: AccessLevel | "none"; label: string }[] = [
   { value: "edit", label: "Edit" },
 ];
 
+/**
+ * What this person can do in the dashboard. Admins and staff both get the module rows; admins also
+ * get Inventory (view or edit stock) and Catalogue & prices.
+ */
 function PermissionGrid({ role, value, onChange }: { role: Role; value: Permissions; onChange: (p: Permissions) => void }) {
-  if (role === "admin") {
-    return (
-      <div className="flex items-start gap-3 rounded-xl bg-brand-soft p-3.5 text-sm text-brand">
-        <ShieldCheck size={18} className="mt-0.5 shrink-0" />
-        <p>Admins can see and change everything, and can sign in to this console.</p>
-      </div>
-    );
-  }
-  const set = (m: GrantableModule, level: AccessLevel | "none") => {
+  const set = (m: PermissionKey, level: AccessLevel | "none") => {
     const next = { ...value };
     if (level === "none") delete next[m];
     else next[m] = level;
     onChange(next);
   };
+  const row = (m: PermissionKey, levels: typeof LEVELS, hint?: string) => {
+    const current = value[m] ?? levels[0]!.value;
+    return (
+      <div key={m} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+        <div className="min-w-0">
+          <p className="text-sm font-medium">{PERMISSION_LABELS[m]}</p>
+          {hint && <p className="text-[12px] text-ink-3">{hint}</p>}
+        </div>
+        <div role="radiogroup" aria-label={`${PERMISSION_LABELS[m]} access`} className="inline-flex shrink-0 rounded-lg bg-surface-2 p-0.5">
+          {levels.map((l) => (
+            <button
+              key={l.value}
+              type="button"
+              role="radio"
+              aria-checked={current === l.value}
+              onClick={() => set(m, l.value)}
+              className={cx(
+                "h-8 min-w-14 rounded-md px-2.5 text-[13px] font-medium transition-all",
+                current === l.value ? (l.value === "none" ? "bg-surface text-ink shadow-sm" : "bg-solid text-on-solid shadow-sm") : "text-ink-3 hover:text-ink",
+              )}
+            >
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
   return (
     <div className="divide-y divide-line rounded-xl border border-line">
-      {GRANTABLE_MODULES.map((m) => {
-        const current = value[m] ?? "none";
-        return (
-          <div key={m} className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-            <span className="text-sm font-medium">{MODULE_LABELS[m]}</span>
-            <div role="radiogroup" aria-label={`${MODULE_LABELS[m]} access`} className="inline-flex rounded-lg bg-surface-2 p-0.5">
-              {LEVELS.map((l) => (
-                <button
-                  key={l.value}
-                  type="button"
-                  role="radio"
-                  aria-checked={current === l.value}
-                  onClick={() => set(m, l.value)}
-                  className={cx(
-                    "h-8 min-w-14 rounded-md px-2.5 text-[13px] font-medium transition-all",
-                    current === l.value ? (l.value === "none" ? "bg-surface text-ink shadow-sm" : "bg-solid text-on-solid shadow-sm") : "text-ink-3 hover:text-ink",
-                  )}
-                >
-                  {l.label}
-                </button>
-              ))}
-            </div>
-          </div>
-        );
-      })}
-      <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
-        <span className="text-sm font-medium">{MODULE_LABELS.inventory}</span>
-        <span className="text-[13px] text-ink-3">Always view · only admins update stock</span>
-      </div>
+      {GRANTABLE_MODULES.map((m) => row(m, LEVELS))}
+      {role === "admin" ? (
+        <>
+          {row("inventory", LEVELS.slice(1), "Edit: add items and change stock")}
+          {row("settings", LEVELS, "Order-form options, price lists, vendor rates")}
+        </>
+      ) : (
+        <div className="flex items-center justify-between gap-3 px-3.5 py-2.5">
+          <span className="text-sm font-medium">{MODULE_LABELS.inventory}</span>
+          <span className="text-[13px] text-ink-3">View only · staff can't change stock</span>
+        </div>
+      )}
     </div>
   );
 }
@@ -92,7 +102,7 @@ function RoleToggle({ value, onChange, disabled }: { value: Role; onChange: (r: 
           )}
         >
           <p className="text-sm font-semibold">{r === "admin" ? "Admin" : "Staff"}</p>
-          <p className="mt-0.5 text-xs text-ink-2">{r === "admin" ? "Everything, plus this console" : "Only what you allow below"}</p>
+          <p className="mt-0.5 text-xs text-ink-2">{r === "admin" ? "This console, plus the access below" : "Only the access below"}</p>
         </button>
       ))}
     </div>
@@ -174,7 +184,12 @@ function PersonForm({ initial, self, submitLabel, onSubmit }: { initial: Draft; 
         </Field>
       </div>
       <Field label="Role">
-        <RoleToggle value={draft.role} onChange={(role) => setDraft({ ...draft, role })} disabled={self} />
+        <RoleToggle
+          value={draft.role}
+          // Making someone an admin starts them at full edit (adjust below); back to staff keeps module access.
+          onChange={(role) => setDraft({ ...draft, role, permissions: role === "admin" && draft.role !== "admin" ? { ...FULL_ADMIN_PERMISSIONS } : draft.permissions })}
+          disabled={self}
+        />
       </Field>
       <Field label="Access">
         <PermissionGrid role={draft.role} value={draft.permissions} onChange={(permissions) => setDraft({ ...draft, permissions })} />
@@ -245,14 +260,15 @@ export function TeamList({ team, me }: { team: TeamMember[]; me: Me }) {
   }
 
   const accessSummary = (m: TeamMember) => {
-    if (m.role === "admin") return <Badge tone="brand">Full access</Badge>;
-    const granted = GRANTABLE_MODULES.filter((g) => m.permissions[g]);
+    const keys = m.role === "admin" ? PERMISSION_KEYS : GRANTABLE_MODULES;
+    if (m.role === "admin" && keys.every((k) => m.permissions[k] === "edit")) return <Badge tone="brand">Full access</Badge>;
+    const granted = keys.filter((g) => m.permissions[g]);
     if (!granted.length) return <span className="text-[13px] text-ink-3">Inventory (view) only</span>;
     return (
       <div className="flex flex-wrap gap-1">
         {granted.map((g) => (
           <Badge key={g} tone={m.permissions[g] === "edit" ? "good" : "neutral"}>
-            {MODULE_LABELS[g]} · {m.permissions[g] === "edit" ? "Edit" : "View"}
+            {PERMISSION_LABELS[g]} · {m.permissions[g] === "edit" ? "Edit" : "View"}
           </Badge>
         ))}
       </div>

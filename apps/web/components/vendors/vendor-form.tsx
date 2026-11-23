@@ -234,7 +234,7 @@ export function VendorForm({ vendor, isAdmin, defaultRates }: { vendor?: VendorD
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="font-semibold">Product-level pricing</h2>
-            <p className="mt-1 text-sm text-ink-2">Leave a rate empty to use the default price list{isAdmin ? "" : ". Only admins can change prices"}.</p>
+            <p className="mt-1 text-sm text-ink-2">Leave a rate empty to use the default price list{isAdmin ? "" : ". Only admins with Catalogue & prices edit access can change prices"}.</p>
           </div>
           <div role="radiogroup" aria-label="Pricing model" className="inline-flex rounded-lg bg-surface-2 p-0.5">
             {(["rft", "sqft"] as const).map((m) => (

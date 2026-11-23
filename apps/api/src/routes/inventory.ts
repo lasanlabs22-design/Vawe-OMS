@@ -13,12 +13,14 @@ import {
 } from "@vawe/shared";
 import { addDays, monthBounds, shiftMonth, todayIST } from "../lib/dates";
 import { fail, idParam, readBody } from "../lib/http";
-import { requireAdmin } from "../middleware/auth";
+import { requireAccess } from "../middleware/auth";
 import type { AppEnv } from "../types";
 
 // Inventory: everyone signed in can view it; only admins change items, colours or stock (a fixed rule,
 // not something ops can grant). Stock only ever changes through a movement.
 export const inventoryRoutes = new Hono<AppEnv>();
+// Changing items, colours or stock: an admin with Inventory: edit.
+const editStock = requireAccess("inventory", "edit");
 
 const r2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -152,7 +154,7 @@ inventoryRoutes.get("/inventory/movements", async (c) => {
 
 // ---------- Admin: items, colours, stock ----------
 
-inventoryRoutes.post("/inventory/items", requireAdmin, async (c) => {
+inventoryRoutes.post("/inventory/items", editStock, async (c) => {
   const input = await readBody(c, inventoryItemSchema);
   const db = await getDb();
   const [{ max } = { max: 0 }] = await db.select({ max: sql<number>`coalesce(max(${inventoryItems.sort}), 0)`.mapWith(Number) }).from(inventoryItems);
@@ -165,7 +167,7 @@ inventoryRoutes.post("/inventory/items", requireAdmin, async (c) => {
   return c.json(item, 201);
 });
 
-inventoryRoutes.patch("/inventory/items/:id", requireAdmin, async (c) => {
+inventoryRoutes.patch("/inventory/items/:id", editStock, async (c) => {
   const input = await readBody(c, inventoryItemSchema.partial());
   const db = await getDb();
   const [row] = await db.update(inventoryItems).set(input).where(eq(inventoryItems.id, idParam(c))).returning();
@@ -190,7 +192,7 @@ async function move(db: Db, args: { variantId: string; delta: number; kind: "in"
   });
 }
 
-inventoryRoutes.post("/inventory/items/:id/variants", requireAdmin, async (c) => {
+inventoryRoutes.post("/inventory/items/:id/variants", editStock, async (c) => {
   const itemId = idParam(c);
   const input = await readBody(c, variantSchema);
   const db = await getDb();
@@ -208,7 +210,7 @@ inventoryRoutes.post("/inventory/items/:id/variants", requireAdmin, async (c) =>
   return c.json(variant, 201);
 });
 
-inventoryRoutes.patch("/inventory/variants/:id", requireAdmin, async (c) => {
+inventoryRoutes.patch("/inventory/variants/:id", editStock, async (c) => {
   const input = await readBody(c, variantUpdateSchema);
   const db = await getDb();
   const [row] = await db.update(inventoryVariants).set(input).where(eq(inventoryVariants.id, idParam(c))).returning();
@@ -216,7 +218,7 @@ inventoryRoutes.patch("/inventory/variants/:id", requireAdmin, async (c) => {
   return c.json(row);
 });
 
-inventoryRoutes.post("/inventory/movements", requireAdmin, async (c) => {
+inventoryRoutes.post("/inventory/movements", editStock, async (c) => {
   const input = await readBody(c, movementSchema);
   const db = await getDb();
   const userId = c.get("user").id;
