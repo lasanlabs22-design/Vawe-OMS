@@ -22,6 +22,12 @@ export const requireSession = (scope: Scope, { allowPasswordChange = false } = {
     await next();
   });
 
+/** Admin-only dashboard actions (catalogue, price lists, stock changes). */
+export const requireAdmin = createMiddleware<AppEnv>(async (c, next) => {
+  if (c.get("user").role !== "admin") fail(403, "Only admins can do this", { code: "FORBIDDEN" });
+  await next();
+});
+
 /** For dashboard routes: the module's access level, checked on the server for every request. */
 export const requireAccess = (module: Module, level: "view" | "edit") =>
   createMiddleware<AppEnv>(async (c, next) => {

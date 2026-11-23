@@ -5,8 +5,16 @@ import { HTTPException } from "hono/http-exception";
 import { logger } from "hono/logger";
 import { secureHeaders } from "hono/secure-headers";
 import { env } from "./env";
+import { requireSession } from "./middleware/auth";
 import { authRoutes } from "./routes/auth";
+import { catalogRoutes } from "./routes/catalog";
+import { financeRoutes } from "./routes/finance";
+import { inventoryRoutes } from "./routes/inventory";
 import { opsUsers } from "./routes/ops-users";
+import { orderRoutes } from "./routes/orders";
+import { overviewRoutes } from "./routes/overview";
+import { salesRoutes } from "./routes/sales";
+import { vendorRoutes } from "./routes/vendors";
 import type { AppEnv } from "./types";
 
 // The browser never calls this API directly: the web app forwards /api/* here (next.config.ts), so
@@ -27,6 +35,19 @@ app.route("/auth", authRoutes("app"));
 // Ops console (ops.vaweinterio.in), admins only
 app.route("/ops/auth", authRoutes("ops"));
 app.route("/ops", opsUsers);
+
+// The dashboard's modules. Every route needs a dashboard session; each module then checks the
+// person's access (view/edit) itself.
+const v1 = new Hono<AppEnv>();
+v1.use("*", requireSession("app"));
+v1.route("/", overviewRoutes);
+v1.route("/", catalogRoutes);
+v1.route("/", vendorRoutes);
+v1.route("/", orderRoutes);
+v1.route("/", financeRoutes);
+v1.route("/", inventoryRoutes);
+v1.route("/", salesRoutes);
+app.route("/v1", v1);
 
 app.notFound((c) => c.json({ error: "Not found" }, 404));
 

@@ -4,6 +4,6 @@ import { defineConfig } from "drizzle-kit";
 // SQL migration. Migrations are applied by src/migrate.ts (at API start-up and on deploy).
 export default defineConfig({
   dialect: "postgresql",
-  schema: "./src/schema.ts",
+  schema: ["./src/schema.ts", "./src/schema-business.ts"],
   out: "./drizzle",
 });
