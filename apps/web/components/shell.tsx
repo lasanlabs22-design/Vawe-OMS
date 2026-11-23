@@ -8,6 +8,7 @@ import type { Me } from "@vawe/shared";
 import { MODULE_NAV, OVERVIEW, type NavItem } from "@/lib/modules";
 import { SignOutButton } from "./auth-forms";
 import { LogoMark, Wordmark } from "./brand";
+import { ThemeToggle } from "./theme-toggle";
 import { Avatar, cx } from "./ui";
 
 const STORAGE_KEY = "vawe.sidebar.collapsed";
@@ -129,8 +130,11 @@ export function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
             {collapsed ? <PanelLeftOpen size={19} /> : <PanelLeftClose size={19} />}
           </button>
           <p className="truncate text-[15px] font-medium">{current?.label ?? "Dashboard"}</p>
-          <div className="ml-auto lg:hidden">
-            <Avatar name={me.name} src={me.photoUrl} size={30} />
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
+            <span className="lg:hidden">
+              <Avatar name={me.name} src={me.photoUrl} size={30} />
+            </span>
           </div>
         </header>
         <main key={pathname} className="animate-rise mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 sm:py-8">

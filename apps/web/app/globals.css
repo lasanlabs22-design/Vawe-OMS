@@ -1,9 +1,21 @@
 @import "tailwindcss";
 
+/* `dark:` utilities follow the same rule as the colours: the chosen theme, else the device. */
+@custom-variant dark {
+  &:where([data-theme="dark"], [data-theme="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]), :root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+}
+
 /* Design tokens: onyx black on warm porcelain with a navy accent, a traditional look. Pink is kept
    for the logo (and the sign-in headline). Components use the Tailwind names below (bg-surface,
    text-ink-2, border-line…), so a theme change only touches these variables. Dark mode follows the
-   device setting.
+   device setting unless someone picks a theme with the toggle (see below).
      solid  buttons and selected states (onyx; porcelain in dark mode), text on it is on-solid
      brand  the navy accent: links and highlights */
 :root {
@@ -36,8 +48,37 @@
   color-scheme: light;
 }
 
+/* Dark mode: chosen with the toggle (data-theme on <html>, remembered in a cookie), or the device
+   setting when nothing is chosen. The two blocks hold the same values; change them together. */
+:root[data-theme="dark"] {
+  --solid: #f5f1ec;
+  --on-solid: #161618;
+  --brand: #7aa7f0;
+  --brand-strong: #a5c3f5;
+  --brand-soft: #16213a;
+  --bg: #0b0b0c;
+  --surface: #141416;
+  --surface-2: #1f1f22;
+  --line: #2a2a2e;
+  --ink: #f5f1ec;
+  --ink-2: #bdb8b1;
+  --ink-3: #807c77;
+  --good: #45c486;
+  --good-soft: #10271c;
+  --warn: #f08a4b;
+  --warn-soft: #2d1a0e;
+  --bad: #ff6b7d;
+  --bad-soft: #2e1218;
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #9085e9;
+  --chart-grid: #26262b;
+  color-scheme: dark;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --solid: #f5f1ec;
     --on-solid: #161618;
     --brand: #7aa7f0;
@@ -135,6 +176,13 @@
       transform: rotate(3deg) translateY(-18px);
     }
   }
+}
+
+/* Switching theme cross-fades the page (see ThemeToggle). */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 420ms;
+  animation-timing-function: ease;
 }
 
 @media (prefers-reduced-motion: reduce) {

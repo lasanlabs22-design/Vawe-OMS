@@ -6,6 +6,7 @@ import { History, LogOut, UserRound, Users } from "lucide-react";
 import type { Me } from "@vawe/shared";
 import { SignOutButton } from "../auth-forms";
 import { LogoMark, Wordmark } from "../brand";
+import { ThemeToggle } from "../theme-toggle";
 import { Avatar, cx } from "../ui";
 
 const LINKS = [
@@ -46,6 +47,7 @@ export function OpsNav({ me }: { me: Me }) {
           })}
         </nav>
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle onDark />
           <Avatar name={me.name} src={me.photoUrl} size={30} />
           <SignOutButton scope="ops" className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white">
             <LogOut size={17} aria-label="Sign out" />
