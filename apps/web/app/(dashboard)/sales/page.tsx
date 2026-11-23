@@ -29,8 +29,19 @@ export default async function SalesPage({ searchParams }: { searchParams: Promis
   let body: React.ReactNode;
   if (tab === "overview") {
     const month = sp.month && /^\d{4}-\d{2}$/.test(sp.month) ? sp.month : today.slice(0, 7);
-    const data = await apiGet<SalesOverview>(`/v1/sales/overview?month=${month}`);
-    body = data.ok ? <SalesOverviewView data={data.data} /> : <LoadError message={data.error.error} />;
+    const from = `${month}-01`;
+    const end = addDays(addMonths(from, 1), -1);
+    const range = `from=${from}&to=${end < today ? end : today}`;
+    const [data, products, sources] = await Promise.all([
+      apiGet<SalesOverview>(`/v1/sales/overview?month=${month}`),
+      apiGet<SalesProducts>(`/v1/sales/products?${range}`),
+      apiGet<SalesSources>(`/v1/sales/sources?${range}`),
+    ]);
+    body = data.ok ? (
+      <SalesOverviewView data={data.data} products={products.ok ? products.data : null} sources={sources.ok ? sources.data : null} />
+    ) : (
+      <LoadError message={data.error.error} />
+    );
   } else if (tab === "days") {
     // Default: the client's example, one month to the same day of the next (e.g. Oct 23 → Nov 23).
     const to = isDay(sp.to) ? sp.to : today;

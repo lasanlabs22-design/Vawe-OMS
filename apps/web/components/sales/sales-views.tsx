@@ -2,10 +2,13 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { SOURCE_LABELS, sourceDetailLabel, type ProductStat, type SalesDay, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
+import { BarChart3, CalendarDays, Megaphone, PieChart, TrendingUp } from "lucide-react";
+import { SOURCE_LABELS, sourceDetailLabel, type OrderSource, type ProductStat, type SalesDay, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
 import { BarList, change, ChartCard, ColumnChart, CountUp, StatTile, TrendChart } from "../charts";
 import { Badge, cx } from "../ui";
 import { DateRange, useUrlState } from "../url-state";
+import { CapsuleColumns, Donut, MonthCalendar, VizCard, Waffle } from "../viz";
+import { MonthHero } from "./month-hero";
 import { addMonths, dayLabel, dayLong, monthLabel, monthLong, rangePresets, todayIST } from "@/lib/dates";
 import { money, moneyShort, number } from "@/lib/format";
 
@@ -14,13 +17,45 @@ const rupeesShort = (n: number) => moneyShort(n);
 
 // ---------- This month ----------
 
-export function SalesOverviewView({ data }: { data: SalesOverview }) {
+// Sources keep one colour each wherever they appear.
+const SOURCE_COLOR: Record<OrderSource, string> = {
+  direct_walkin: "var(--chart-1)",
+  social_media: "var(--chart-2)",
+  b2b_vendor: "var(--chart-3)",
+  offline_marketing: "var(--chart-4)",
+  reference: "color-mix(in oklab, var(--ink) 40%, var(--surface))",
+};
+const PRODUCT_COLORS = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-4)"];
+
+/** Split `total` squares between the counts in proportion (largest remainder), so they always add up. */
+function squares(counts: number[], total: number): number[] {
+  const sum = counts.reduce((s, c) => s + c, 0);
+  if (!sum) return counts.map(() => 0);
+  const exact = counts.map((c) => (c / sum) * total);
+  const out = exact.map(Math.floor);
+  const order = exact.map((e, i) => [e - Math.floor(e), i] as const).sort((a, b) => b[0] - a[0]);
+  for (let k = 0; k < total - out.reduce((s, n) => s + n, 0); k++) out[order[k]![1]]! += 1;
+  return out;
+}
+
+export function SalesOverviewView({ data, products, sources }: { data: SalesOverview; products: SalesProducts | null; sources: SalesSources | null }) {
   const { set } = useUrlState();
   const current = todayIST().slice(0, 7);
-  const avg = data.thisMonth.orders ? data.thisMonth.value / data.thisMonth.orders : 0;
-  const prevAvg = data.lastMonthToDate.orders ? data.lastMonthToDate.value / data.lastMonthToDate.orders : 0;
   const shown = data.month === current ? data.daily.filter((d) => d.date <= todayIST()) : data.daily;
   const months = data.monthly;
+  const lastMonth = months[months.length - 2];
+
+  const sold = (products?.orderTypes ?? []).filter((p) => p.value > 0);
+  const productSlices = [
+    ...sold.slice(0, 4).map((p, i) => ({ label: p.name, value: p.value, color: PRODUCT_COLORS[i]! })),
+    ...(sold.length > 4 ? [{ label: "Others", value: sold.slice(4).reduce((s, p) => s + p.value, 0), color: "color-mix(in oklab, var(--ink) 30%, var(--surface))" }] : []),
+  ];
+  const src = (sources?.sources ?? []).filter((s) => s.orders > 0).sort((a, b) => b.orders - a.orders);
+  const srcOrders = src.reduce((s, x) => s + x.orders, 0);
+  const srcSquares = squares(
+    src.map((s) => s.orders),
+    50,
+  );
 
   return (
     <div className="space-y-5">
@@ -40,51 +75,51 @@ export function SalesOverviewView({ data }: { data: SalesOverview }) {
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <StatTile label={`Orders in ${monthLong(data.month)}`} value={data.thisMonth.orders} delta={deltaOf(data.thisMonth.orders, data.lastMonthToDate.orders)} />
-        <StatTile label="Order value" value={data.thisMonth.value} format={rupeesShort} delta={deltaOf(data.thisMonth.value, data.lastMonthToDate.value)} delay={60} />
-        <StatTile label="Average order" value={avg} format={rupeesShort} delta={deltaOf(avg, prevAvg)} delay={120} />
-        <StatTile
-          label="3-month average"
-          value={months.slice(0, 3).reduce((s, m) => s + m.value, 0) / 3}
-          format={rupeesShort}
-          hint="Value per month, the 3 months before"
-          delay={180}
-        />
-      </div>
+      <div className="grid gap-5 lg:grid-cols-6">
+        <VizCard icon={TrendingUp} tone="var(--chart-1)" title={data.month === current ? "Sales this month" : `Sales in ${monthLong(data.month)}`} subtitle="Order value before GST" className="lg:col-span-4">
+          <MonthHero
+            value={data.thisMonth.value}
+            orders={data.thisMonth.orders}
+            before={data.lastMonthToDate.value}
+            lastMonthTotal={lastMonth?.value ?? 0}
+            daily={shown}
+            caption={`Order value per day, ${monthLong(data.month)}`}
+          />
+        </VizCard>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ChartCard
-          title="Orders per day"
-          subtitle={monthLong(data.month)}
-          table={{ columns: ["Day", "Orders", "Value"], rows: shown.map((d) => [dayLong(d.date), d.orders, rupees(d.value)]) }}
-        >
-          <ColumnChart data={shown.map((d) => ({ label: d.date.slice(8, 10).replace(/^0/, ""), value: d.orders, tooltip: dayLong(d.date) }))} integer format={(n) => number(n)} valueFormat={(n) => `${number(n)} order${n === 1 ? "" : "s"}`} />
-        </ChartCard>
-        <ChartCard title="Order value per day" subtitle="Before GST" table={{ columns: ["Day", "Value"], rows: shown.map((d) => [dayLong(d.date), rupees(d.value)]) }}>
-          <TrendChart points={shown.map((d) => ({ label: dayLabel(d.date), a: d.value, title: dayLong(d.date) }))} aLabel="value" valueFormat={rupees} />
-        </ChartCard>
-      </div>
+        <VizCard icon={BarChart3} tone="var(--chart-1)" title="Month by month" subtitle="Value of the last 4 months" className="lg:col-span-2">
+          <CapsuleColumns
+            cols={months.map((m) => ({ label: monthLabel(m.month), value: m.value, sub: `${number(m.orders)} order${m.orders === 1 ? "" : "s"}`, highlight: m.month === data.month }))}
+            format={rupeesShort}
+            height={190}
+          />
+        </VizCard>
 
-      <div className="grid gap-5 lg:grid-cols-2">
-        <ChartCard
-          title="Last 3 months vs this month: value"
-          subtitle="Highlighted: the selected month"
-          table={{ columns: ["Month", "Orders", "Value"], rows: months.map((m) => [monthLong(m.month), m.orders, rupees(m.value)]) }}
-        >
-          <ColumnChart data={months.map((m) => ({ label: monthLabel(m.month), value: m.value, highlight: m.month === data.month, tooltip: monthLong(m.month) }))} valueFormat={rupees} />
-        </ChartCard>
-        <ChartCard title="Last 3 months vs this month: orders" subtitle="Number of orders">
-          <ColumnChart data={months.map((m) => ({ label: monthLabel(m.month), value: m.orders, highlight: m.month === data.month, tooltip: monthLong(m.month) }))} integer format={(n) => number(n)} valueFormat={(n) => `${number(n)} orders`} />
-        </ChartCard>
+        <VizCard icon={CalendarDays} tone="var(--chart-4)" title="Orders on each day" subtitle={`${monthLong(data.month)}, darker for busier days`} className="lg:col-span-2">
+          <MonthCalendar days={data.daily.map((d) => ({ date: d.date, count: d.orders }))} today={todayIST()} label="orders" />
+        </VizCard>
+
+        <VizCard icon={PieChart} tone="var(--chart-2)" title="What sold" subtitle="Value by order type" className="lg:col-span-2">
+          {productSlices.length ? (
+            <Donut size={150} stacked slices={productSlices} format={rupeesShort} center={{ value: rupeesShort(data.thisMonth.value), label: data.month === current ? "this month" : monthLabel(data.month) }} />
+          ) : (
+            <p className="py-6 text-center text-sm text-ink-3">No sales yet this month.</p>
+          )}
+        </VizCard>
+
+        <VizCard icon={Megaphone} tone="var(--chart-3)" title="Where orders came from" subtitle="Each square is 2% of orders" className="lg:col-span-2">
+          {srcOrders ? (
+            <Waffle
+              tiles={src.flatMap((s, i) => Array.from({ length: srcSquares[i]! }, () => ({ label: `${SOURCE_LABELS[s.source]}: ${s.orders} orders`, color: SOURCE_COLOR[s.source] })))}
+              legend={src.map((s) => ({ label: SOURCE_LABELS[s.source], color: SOURCE_COLOR[s.source], count: s.orders }))}
+            />
+          ) : (
+            <p className="py-6 text-center text-sm text-ink-3">No orders yet this month.</p>
+          )}
+        </VizCard>
       </div>
     </div>
   );
-}
-
-function deltaOf(now: number, before: number) {
-  const c = change(now, before);
-  return c === null ? null : { value: c, label: "vs last month, same days" };
 }
 
 // ---------- Day by day ----------
@@ -93,7 +128,7 @@ export function SalesDayByDay({ data }: { data: SalesRange }) {
   const { set } = useUrlState();
   const today = todayIST();
   const points = data.current.map((d, i) => ({ label: dayLabel(d.date), a: d.value, b: data.previous[i]?.value ?? 0, title: dayLong(d.date) }));
-  const prevLabel = data.previous.length ? `${dayLabel(data.previous[0]!.date)} â€“ ${dayLabel(data.previous[data.previous.length - 1]!.date)}` : "previous period";
+  const prevLabel = data.previous.length ? `${dayLabel(data.previous[0]!.date)} to ${dayLabel(data.previous[data.previous.length - 1]!.date)}` : "previous period";
 
   return (
     <div className="space-y-5">
@@ -117,7 +152,7 @@ export function SalesDayByDay({ data }: { data: SalesRange }) {
 
       <ChartCard
         title="Value per day"
-        subtitle={`${dayLong(data.from)} â†’ ${dayLong(data.to)}, against the ${data.current.length} days before`}
+        subtitle={`${dayLong(data.from)} → ${dayLong(data.to)}, against the ${data.current.length} days before`}
         legend={[
           { label: "This range", color: "var(--chart-1)" },
           { label: prevLabel, color: "var(--chart-2)" },
@@ -150,7 +185,7 @@ export function SalesDayByDay({ data }: { data: SalesRange }) {
                     <td className="px-4 py-2 sm:px-5">{dayLong(d.date)}</td>
                     <td className="px-3 py-2 text-right">{d.orders}</td>
                     <td className="px-3 py-2 text-right font-medium">{rupees(d.value)}</td>
-                    <td className="hidden px-4 py-2 text-right text-ink-3 sm:table-cell sm:px-5">{prev ? `${dayLabel(prev.date)}: ${rupees(prev.value)}` : "â€”"}</td>
+                    <td className="hidden px-4 py-2 text-right text-ink-3 sm:table-cell sm:px-5">{prev ? `${dayLabel(prev.date)}: ${rupees(prev.value)}` : "—"}</td>
                   </tr>
                 );
               })}
@@ -340,7 +375,7 @@ export function SalesProductsView({ data, from, to }: { data: SalesProducts; fro
       <div className="grid gap-5 lg:grid-cols-[1fr_1.4fr]">
         <ChartCard title="Top products" subtitle="By value (before GST)">
           <BarList
-            rows={sold.slice(0, 8).map((r) => ({ label: r.name, value: r.value, sub: `${number(r.orders)} order${r.orders === 1 ? "" : "s"} Â· ${number(r.shutters)} shutters Â· ${share(r.value, totalValue)}` }))}
+            rows={sold.slice(0, 8).map((r) => ({ label: r.name, value: r.value, sub: `${number(r.orders)} order${r.orders === 1 ? "" : "s"} · ${number(r.shutters)} shutters · ${share(r.value, totalValue)}` }))}
             format={rupees}
             empty="No sales in this range yet"
           />
@@ -401,7 +436,7 @@ function ProductTable({ rows }: { rows: ProductStat[] }) {
                 <td className="px-3 py-2.5 text-right">{number(r.shutters)}</td>
                 <td className="px-3 py-2.5 text-right">{number(r.sqft, 1)}</td>
                 <td className="px-3 py-2.5 text-right font-medium">{rupees(r.value)}</td>
-                <td className="px-4 py-2.5 text-right text-ink-3 sm:px-5">{r.lastSold ? dayLabel(r.lastSold) : "â€”"}</td>
+                <td className="px-4 py-2.5 text-right text-ink-3 sm:px-5">{r.lastSold ? dayLabel(r.lastSold) : "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -470,7 +505,7 @@ function FunnelBars({ rows, total }: { rows: { label: string; orders: number; va
                 <div className="relative flex h-full items-center justify-between px-3 text-sm">
                   <span className="rounded bg-surface/85 px-1.5 font-medium">{r.label}</span>
                   <span className="rounded bg-surface/85 px-1.5 font-semibold tabular-nums">
-                    <CountUp value={r.orders} /> <span className="font-normal text-ink-3">Â· {total ? Math.round((r.orders / total) * 100) : 0}%</span>
+                    <CountUp value={r.orders} /> <span className="font-normal text-ink-3">· {total ? Math.round((r.orders / total) * 100) : 0}%</span>
                   </span>
                 </div>
               </div>
