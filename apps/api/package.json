@@ -8,6 +8,8 @@
     "build": "tsup",
     "start": "node dist/index.js",
     "admin": "tsx --env-file-if-exists=.env scripts/admin.ts",
+    "demo": "tsx scripts/demo-data.ts",
+    "import:workbook": "tsx --env-file-if-exists=.env scripts/import-workbook.ts",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
