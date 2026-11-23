@@ -2,7 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import type { PostgresJsDatabase } from "drizzle-orm/postgres-js";
-import * as schema from "./schema";
+import * as authSchema from "./schema";
+import * as businessSchema from "./schema-business";
+
+const schema = { ...authSchema, ...businessSchema };
 
 // With DATABASE_URL set (Railway, or a local Postgres) we use real Postgres through postgres.js.
 // Without it, local development falls back to an embedded Postgres (PGlite) stored in <repo>/.data,
@@ -66,3 +69,5 @@ export async function closeDb(): Promise<void> {
 
 export { schema };
 export * from "./schema";
+export * from "./schema-business";
+export { seedReferenceData, WALK_IN_CODE } from "./seed";
