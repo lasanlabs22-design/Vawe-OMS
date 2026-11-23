@@ -519,6 +519,71 @@ export function RadialBars({ rows, color = "var(--chart-2)", size = 220, format 
   );
 }
 
+// ---------- Split bars ----------
+
+/**
+ * Ranked bars where each bar is split in two (e.g. outstanding, with the overdue part first).
+ * Both parts are named in the legend and in each row's figures.
+ */
+export function SplitBars({
+  rows,
+  parts,
+  format = (n) => n.toLocaleString("en-IN"),
+  empty = "Nothing to show yet",
+}: {
+  rows: { label: string; href?: string; a: number; b: number }[];
+  parts: [{ label: string; color: string }, { label: string; color: string }];
+  format?: (n: number) => string;
+  empty?: string;
+}) {
+  const [ref, seen] = useSeen<HTMLUListElement>();
+  const max = Math.max(1, ...rows.map((r) => r.a + r.b));
+  if (!rows.length) return <p className="py-4 text-center text-sm text-ink-3">{empty}</p>;
+  return (
+    <div>
+      <ul ref={ref} className="space-y-3">
+        {rows.map((r, i) => (
+          <li key={r.label}>
+            <div className="mb-1 flex items-baseline justify-between gap-3 text-[13px]">
+              {r.href ? (
+                <a href={r.href} className="min-w-0 truncate font-medium hover:text-brand">
+                  {r.label}
+                </a>
+              ) : (
+                <span className="min-w-0 truncate font-medium">{r.label}</span>
+              )}
+              <span className="shrink-0 tabular-nums">
+                <span className="font-semibold">{format(r.a + r.b)}</span>
+                {r.a > 0 && <span className="text-ink-3"> · {format(r.a)} {parts[0].label.toLowerCase()}</span>}
+              </span>
+            </div>
+            <div className="flex h-2.5 gap-[2px] overflow-hidden rounded-full" role="img" aria-label={`${r.label}: ${parts[0].label} ${format(r.a)}, ${parts[1].label} ${format(r.b)}`}>
+              {parts.map((p, k) => {
+                const v = k === 0 ? r.a : r.b;
+                return v > 0 ? (
+                  <div
+                    key={p.label}
+                    className="h-full first:rounded-l-full last:rounded-r-full"
+                    style={{ background: p.color, width: seen ? `${(v / max) * 100}%` : "0%", transition: `width 900ms ${EASE} ${i * 90 + k * 120}ms` }}
+                  />
+                ) : null;
+              })}
+            </div>
+          </li>
+        ))}
+      </ul>
+      <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
+        {parts.map((p) => (
+          <li key={p.label} className="flex items-center gap-1.5 text-[13px] text-ink-2">
+            <span aria-hidden className="size-2.5 rounded-[3px]" style={{ background: p.color }} />
+            {p.label}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export function VizCard({
   title,
   subtitle,
