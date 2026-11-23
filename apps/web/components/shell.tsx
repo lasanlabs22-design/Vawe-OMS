@@ -52,7 +52,7 @@ export function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
   }
 
   const items = [OVERVIEW, ...MODULE_NAV.filter((n) => !n.module || me.access[n.module] !== "none")];
-  const current = [...items, { href: "/settings", label: "Settings", icon: Settings }].find(
+  const current = [...items, { href: "/settings", label: "Settings", icon: Settings, color: "var(--ink-3)" }].find(
     (n) => pathname === n.href || pathname.startsWith(n.href + "/"),
   );
 
@@ -100,7 +100,7 @@ export function Shell({ me, children }: { me: Me; children: React.ReactNode }) {
         </nav>
 
         <div className="space-y-1 border-t border-line p-3">
-          <NavLink item={{ href: "/settings", label: "Settings", icon: Settings }} active={current?.href === "/settings"} collapsed={collapsed} />
+          <NavLink item={{ href: "/settings", label: "Settings", icon: Settings, color: "var(--ink-3)" }} active={current?.href === "/settings"} collapsed={collapsed} />
           <div className={cx("mt-2 flex items-center gap-3 rounded-xl p-2", collapsed && "lg:justify-center lg:p-1")}>
             <Avatar name={me.name} src={me.photoUrl} size={34} />
             <div className={cx("min-w-0 flex-1", collapsed && "lg:hidden")}>
@@ -151,12 +151,11 @@ function NavLink({ item, active, collapsed, viewOnly, delay = 0 }: { item: NavIt
       style={{ animationDelay: `${delay}ms` }}
       className={cx(
         "group animate-rise relative flex h-11 items-center gap-3 rounded-xl px-3 text-[14.5px] font-medium transition-colors",
-        active ? "bg-brand-soft text-brand" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+        active ? "bg-solid text-on-solid shadow-sm" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
         collapsed && "lg:justify-center lg:px-0",
       )}
     >
-      {active && <span aria-hidden className="absolute top-2 bottom-2 left-0 w-[3px] rounded-r-full bg-brand" />}
-      <Icon size={19} className="shrink-0" />
+      <Icon size={19} className="shrink-0" style={{ color: active ? undefined : item.color }} />
       <span className={cx("flex-1 truncate", collapsed && "lg:hidden")}>{item.label}</span>
       {viewOnly && <span className={cx("rounded-md bg-surface-2 px-1.5 py-0.5 text-[10.5px] font-medium text-ink-3", collapsed && "lg:hidden")}>View</span>}
     </Link>
