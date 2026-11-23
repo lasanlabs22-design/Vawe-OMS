@@ -1,7 +1,8 @@
 ﻿"use client";
 
 import { useState } from "react";
-import { SOURCE_LABELS, sourceDetailLabel, type ProductStat, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
+import Link from "next/link";
+import { SOURCE_LABELS, sourceDetailLabel, type ProductStat, type SalesDay, type SalesOverview, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
 import { BarList, change, ChartCard, ColumnChart, CountUp, StatTile, TrendChart } from "../charts";
 import { Badge, cx } from "../ui";
 import { DateRange, useUrlState } from "../url-state";
@@ -169,6 +170,135 @@ function rangeDelta(now: number, before: number) {
 function bestDay(data: SalesRange): string {
   const best = data.current.reduce((b, d) => (d.value > (b?.value ?? -1) ? d : b), data.current[0]);
   return best && best.value > 0 ? dayLong(best.date) : "No orders yet";
+}
+
+// ---------- Compare days ----------
+
+/** Chosen days side by side, e.g. 1 Sept vs 1 Oct vs 1 Nov. Dates live in ?dates=. */
+export function SalesCompareDays({ days, canOpenOrders }: { days: SalesDay[]; canOpenOrders: boolean }) {
+  const { set } = useUrlState();
+  const today = todayIST();
+  const dates = days.map((d) => d.date);
+  const latest = dates[dates.length - 1] ?? today;
+  const first = days[0];
+  const setDates = (list: string[]) => set({ dates: [...new Set(list)].sort().join(",") });
+  const sameDayBack = (months: number) => Array.from({ length: months }, (_, i) => addMonths(latest, -i));
+  const firstOfMonths = (months: number) => Array.from({ length: months }, (_, i) => `${addMonths(today, -i).slice(0, 7)}-01`);
+
+  return (
+    <div className="space-y-5">
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center gap-2">
+          {dates.map((d) => (
+            <span key={d} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface pr-1 pl-3 text-[13px] font-medium">
+              {dayLong(d)}
+              {dates.length > 1 && (
+                <button type="button" onClick={() => setDates(dates.filter((x) => x !== d))} className="rounded-md px-1.5 py-0.5 text-ink-3 hover:bg-surface-2 hover:text-ink" aria-label={`Remove ${dayLong(d)}`}>
+                  ×
+                </button>
+              )}
+            </span>
+          ))}
+          {dates.length < 12 && (
+            <label className="inline-flex h-9 items-center gap-2 rounded-lg border border-dashed border-line bg-surface px-3 text-[13px] text-ink-2">
+              Add a date
+              <input type="date" max={today} aria-label="Add a date" onChange={(e) => e.target.value && setDates([...dates, e.target.value])} className="bg-transparent outline-none" />
+            </label>
+          )}
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-[13px]">
+          <span className="text-ink-3">Quick picks:</span>
+          <button type="button" onClick={() => setDates(sameDayBack(3))} className="rounded-md px-2 py-1 font-medium text-brand hover:bg-brand-soft">
+            Same day, last 3 months
+          </button>
+          <button type="button" onClick={() => setDates(sameDayBack(6))} className="rounded-md px-2 py-1 font-medium text-brand hover:bg-brand-soft">
+            Same day, last 6 months
+          </button>
+          <button type="button" onClick={() => setDates(firstOfMonths(3))} className="rounded-md px-2 py-1 font-medium text-brand hover:bg-brand-soft">
+            1st of the last 3 months
+          </button>
+        </div>
+      </div>
+
+      <div className="grid gap-5 lg:grid-cols-2">
+        <ChartCard title="Order value on each day" subtitle="Before GST" table={{ columns: ["Day", "Orders", "Value"], rows: days.map((d) => [dayLong(d.date), d.orders, rupees(d.value)]) }}>
+          <ColumnChart data={days.map((d) => ({ label: dayLabel(d.date), value: d.value, highlight: d.date === latest, tooltip: dayLong(d.date) }))} valueFormat={rupees} />
+        </ChartCard>
+        <ChartCard title="Orders on each day" subtitle="Number of orders">
+          <ColumnChart data={days.map((d) => ({ label: dayLabel(d.date), value: d.orders, highlight: d.date === latest, tooltip: dayLong(d.date) }))} integer format={(n) => number(n)} valueFormat={(n) => `${number(n)} order${n === 1 ? "" : "s"}`} />
+        </ChartCard>
+      </div>
+
+      <section className="overflow-hidden rounded-2xl border border-line bg-surface">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[560px] text-sm">
+            <thead className="bg-surface-2 text-left text-[12px] text-ink-3">
+              <tr>
+                <th className="px-4 py-2.5 font-medium sm:px-5">Day</th>
+                <th className="px-3 py-2.5 text-right font-medium">Orders</th>
+                <th className="px-3 py-2.5 text-right font-medium">Shutters</th>
+                <th className="px-3 py-2.5 text-right font-medium">Value</th>
+                <th className="px-4 py-2.5 text-right font-medium sm:px-5">vs {first ? dayLabel(first.date) : "first day"}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-line tabular-nums">
+              {days.map((d, i) => {
+                const c = first && i > 0 ? change(d.value, first.value) : null;
+                return (
+                  <tr key={d.date}>
+                    <td className="px-4 py-2.5 font-medium sm:px-5">{dayLong(d.date)}</td>
+                    <td className="px-3 py-2.5 text-right">{d.orders}</td>
+                    <td className="px-3 py-2.5 text-right">{d.shutters}</td>
+                    <td className="px-3 py-2.5 text-right font-medium">{rupees(d.value)}</td>
+                    <td className={cx("px-4 py-2.5 text-right sm:px-5", c === null || Math.round(c) === 0 ? "text-ink-3" : c > 0 ? "text-good" : "text-bad")}>
+                      {i === 0 ? "Base" : c === null ? "New" : Math.round(c) === 0 ? "Same" : `${c > 0 ? "▲" : "▼"} ${Math.abs(Math.round(c))}%`}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {days.map((d) => (
+          <section key={d.date} className="rounded-2xl border border-line bg-surface">
+            <div className="flex items-baseline justify-between gap-3 border-b border-line px-4 py-3">
+              <h3 className="font-semibold">{dayLong(d.date)}</h3>
+              <span className="text-[13px] text-ink-3">
+                {d.orders} order{d.orders === 1 ? "" : "s"}
+              </span>
+            </div>
+            {d.list.length === 0 ? (
+              <p className="px-4 py-5 text-center text-sm text-ink-3">No orders that day.</p>
+            ) : (
+              <ul className="divide-y divide-line">
+                {d.list.map((o) => (
+                  <li key={o.id} className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm">
+                    <div className="min-w-0">
+                      {canOpenOrders ? (
+                        <Link href={`/orders/${o.id}`} className="font-medium tabular-nums hover:text-brand">
+                          {o.code}
+                        </Link>
+                      ) : (
+                        <span className="font-medium tabular-nums">{o.code}</span>
+                      )}
+                      <p className="truncate text-[12.5px] text-ink-3">
+                        {o.vendorName}
+                        {o.customerName && ` · ${o.customerName}`}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-medium tabular-nums">{rupees(o.value)}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 // ---------- Products ----------

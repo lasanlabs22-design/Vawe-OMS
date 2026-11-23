@@ -1,7 +1,7 @@
 import { Hono } from "hono";
-import { and, eq, gte, lte, ne, sql } from "drizzle-orm";
-import { catalogOptions, getDb, orderItems, orders, type Db } from "@vawe/db";
-import { ORDER_SOURCES, type ProductStat, type SalesOverview, type SalesPoint, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
+import { and, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
+import { catalogOptions, getDb, orderItems, orders, vendors, type Db } from "@vawe/db";
+import { ORDER_SOURCES, type ProductStat, type SalesDay, type SalesOverview, type SalesPoint, type SalesProducts, type SalesRange, type SalesSources } from "@vawe/shared";
 import { addDays, daysBetween, eachDay, isDay, isMonth, monthBounds, shiftMonth, todayIST } from "../lib/dates";
 import { fail } from "../lib/http";
 import { requireAccess } from "../middleware/auth";
@@ -64,6 +64,39 @@ salesRoutes.get("/sales/range", view, async (c) => {
   const previous = await daily(db, addDays(q.from, -length), addDays(q.from, -1));
   const range: SalesRange = { from: q.from, to: q.to, current, previous, totals: sum(current), previousTotals: sum(previous) };
   return c.json(range);
+});
+
+/** Any set of days side by side (e.g. 1 Sept, 1 Oct, 1 Nov): totals and the orders on each. */
+salesRoutes.get("/sales/days", view, async (c) => {
+  const dates = [...new Set((c.req.query("dates") ?? "").split(",").map((d) => d.trim()).filter(isDay))].sort();
+  if (!dates.length) fail(400, "Pick at least one date");
+  if (dates.length > 12) fail(400, "Compare up to 12 dates at a time");
+  const db = await getDb();
+  const rows = await db
+    .select({
+      id: orders.id,
+      code: orders.code,
+      date: orders.orderDate,
+      vendorName: vendors.firmName,
+      customerName: orders.customerName,
+      value,
+      shutters: sql<number>`(select coalesce(sum(${orderItems.quantity}), 0) from ${orderItems} where ${orderItems.orderId} = ${orders.id})`.mapWith(Number),
+    })
+    .from(orders)
+    .innerJoin(vendors, eq(vendors.id, orders.vendorId))
+    .where(and(ne(orders.stage, "cancelled"), inArray(orders.orderDate, dates)))
+    .orderBy(orders.code);
+  const days: SalesDay[] = dates.map((date) => {
+    const mine = rows.filter((r) => r.date === date);
+    return {
+      date,
+      orders: mine.length,
+      value: r0(mine.reduce((s, r) => s + Number(r.value), 0)),
+      shutters: mine.reduce((s, r) => s + r.shutters, 0),
+      list: mine.map((r) => ({ id: r.id, code: r.code, vendorName: r.vendorName, customerName: r.customerName, value: r0(Number(r.value)) })),
+    };
+  });
+  return c.json(days);
 });
 
 function bounds(q: Record<string, string>) {
