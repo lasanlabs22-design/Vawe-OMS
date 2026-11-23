@@ -28,16 +28,34 @@ export function AuthFrame({ area, title, subtitle, children }: { area: string; t
         <p className="relative z-10 text-xs text-white/40">© {new Date().getFullYear()} Vawe Interio</p>
       </aside>
 
-      <main className="flex items-center justify-center px-4 py-10 sm:px-8">
-        <div className="animate-rise relative z-10 w-full max-w-sm">
-          <div className="mb-10 lg:hidden">
-            <Lockup sub={area} />
+      <main className="flex flex-col items-center px-4 py-10 sm:px-8">
+        <div className="flex w-full flex-1 items-center justify-center">
+          <div className="animate-rise relative z-10 w-full max-w-sm">
+            <div className="mb-10 lg:hidden">
+              <Lockup sub={area} />
+            </div>
+            <h1 className="font-display text-[34px] leading-tight tracking-tight">{title}</h1>
+            {subtitle && <p className="mt-2 text-sm text-ink-2">{subtitle}</p>}
+            <div className="mt-8">{children}</div>
           </div>
-          <h1 className="font-display text-[34px] leading-tight tracking-tight">{title}</h1>
-          {subtitle && <p className="mt-2 text-sm text-ink-2">{subtitle}</p>}
-          <div className="mt-8">{children}</div>
         </div>
+        <PoweredBy />
       </main>
     </div>
+  );
+}
+
+/**
+ * The Lasan Labs credit, styled as on the Vawe website: "Lasan Labs" in Space Grotesk with Lasan's
+ * gradient. The website's gradient is for dark grounds; on porcelain it starts from ink instead.
+ */
+function PoweredBy() {
+  return (
+    <p className="relative z-10 mt-10 flex items-baseline justify-center gap-1.5 text-xs text-ink-3">
+      <span>Powered by</span>
+      <span className="bg-[linear-gradient(100deg,#161618_10%,#6d5ce8_55%,#0891b2)] bg-clip-text font-[family-name:var(--font-space-grotesk)] font-semibold tracking-[-0.025em] text-transparent dark:bg-[linear-gradient(100deg,#fff_10%,#b3a1ff_55%,#22d3ee)]">
+        Lasan Labs
+      </span>
+    </p>
   );
 }

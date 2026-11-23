@@ -13,7 +13,7 @@ export default async function ChangePasswordPage() {
   if (!me.data.mustChangePassword) redirect("/settings");
 
   return (
-    <AuthFrame area="Dashboard" title={`Welcome, ${me.data.name.split(" ")[0]}`} subtitle="Choose your own password to replace the temporary one.">
+    <AuthFrame area="OMS Dashboard" title={`Welcome, ${me.data.name.split(" ")[0]}`} subtitle="Choose your own password to replace the temporary one.">
       <ChangePasswordForm scope="app" forced />
     </AuthFrame>
   );
