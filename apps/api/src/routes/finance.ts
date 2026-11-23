@@ -201,7 +201,7 @@ financeRoutes.post("/payments", edit, async (c) => {
   return c.json(row, 201);
 });
 
-financeRoutes.delete("/payments/:id", requireAdmin, async (c) => {
+financeRoutes.delete("/payments/:id", requireAdmin, edit, async (c) => {
   const id = idParam(c);
   const db = await getDb();
   const [row] = await db.delete(payments).where(eq(payments.id, id)).returning();
@@ -249,7 +249,7 @@ financeRoutes.post("/expenses", edit, async (c) => {
   return c.json(row, 201);
 });
 
-financeRoutes.delete("/expenses/:id", requireAdmin, async (c) => {
+financeRoutes.delete("/expenses/:id", requireAdmin, edit, async (c) => {
   const db = await getDb();
   const [row] = await db.delete(expenses).where(eq(expenses.id, idParam(c))).returning();
   if (!row) fail(404, "Expense not found");
@@ -331,7 +331,7 @@ financeRoutes.post("/purchases", edit, async (c) => {
 });
 
 /** Recent purchases, for linking a stock-in to one (inventory is admin-only, so this is too). */
-financeRoutes.get("/purchase-options", requireAdmin, async (c) => {
+financeRoutes.get("/purchase-options", requireAccess("inventory", "edit"), async (c) => {
   const db = await getDb();
   const rows = await db
     .select({ id: purchases.id, supplierName: purchases.supplierName, invoiceNo: purchases.invoiceNo, purchasedOn: purchases.purchasedOn, amount: purchases.amount })

@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { eq, sql } from "drizzle-orm";
 import { getDb, userPhotos, users } from "@vawe/db";
-import { accessMap, changePasswordSchema, loginSchema, profileSchema, type Me } from "@vawe/shared";
+import { accessMap, changePasswordSchema, loginSchema, profileSchema, settingsAccess, type Me } from "@vawe/shared";
 import { logActivity } from "../lib/activity";
 import { clientIp, fail, idParam, readBody } from "../lib/http";
 import { burnTime, hashPassword, verifyPassword } from "../lib/passwords";
@@ -16,7 +16,7 @@ const LOCK_MINUTES = 15;
 
 export function toMe(user: AuthedUser, scope: Scope): Me {
   const { photoAt, ...rest } = user;
-  return { ...rest, photoUrl: photoUrl(scope, user.id, photoAt), access: accessMap(user) };
+  return { ...rest, photoUrl: photoUrl(scope, user.id, photoAt), access: accessMap(user), settings: settingsAccess(user) };
 }
 
 /**

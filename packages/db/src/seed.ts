@@ -1,7 +1,8 @@
-import { sql } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { GlassGroup, InventoryCategory, InventoryUnit, OrderFamily } from "@vawe/shared";
 import type { Db } from "./index";
-import { catalogOptions, inventoryItems, inventoryVariants, vendors } from "./schema-business";
+import { userPermissions, users } from "./schema";
+import { appSettings, catalogOptions, inventoryItems, inventoryVariants, vendors } from "./schema-business";
 
 // Reference data every installation starts with, applied once on an empty database (API start-up).
 // Product and option names only: vendors, contacts and prices come from the client's workbook through
@@ -122,7 +123,29 @@ const INVENTORY: Stock[] = [
 
 export const WALK_IN_CODE = "WALK-IN";
 
+/**
+ * Admins used to have every power implicitly. Since admin access became per-person, admins who
+ * existed before that change are given full edit once (marked in app_settings so it never repeats
+ * and can't undo a later choice to make an admin view-only).
+ */
+async function backfillAdminPermissions(db: Db): Promise<void> {
+  const KEY = "migration:admin_permissions";
+  const [done] = await db.select().from(appSettings).where(eq(appSettings.key, KEY)).limit(1);
+  if (done) return;
+  const admins = await db.select({ id: users.id }).from(users).where(eq(users.role, "admin"));
+  for (const a of admins) {
+    const existing = await db.select().from(userPermissions).where(eq(userPermissions.userId, a.id));
+    if (existing.length) continue;
+    await db.insert(userPermissions).values(
+      (["sales", "vendor", "order", "finance", "inventory", "settings"] as const).map((module) => ({ userId: a.id, module, level: "edit" as const })),
+    );
+  }
+  await db.insert(appSettings).values({ key: KEY, value: { at: new Date().toISOString(), admins: admins.length } });
+}
+
 export async function seedReferenceData(db: Db): Promise<void> {
+  await backfillAdminPermissions(db);
+
   const [catalog] = await db.select({ n: sql<number>`count(*)`.mapWith(Number) }).from(catalogOptions);
   if (!catalog?.n) {
     await db.transaction(async (tx) => {

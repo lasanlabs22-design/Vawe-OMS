@@ -9,7 +9,7 @@ The OMS was built before every question to the client was answered. Where an ans
 | What "verified login" means | Password with lockout (5 tries, 15 minutes), forced change of temporary passwords, server-side sessions. **No one-time codes yet:** email codes can be added once Resend is set up | `apps/api/src/routes/auth.ts` |
 | Who uses ops | Admins only | `authRoutes("ops")` |
 | Same account for ops and app | Yes. One account, separate sessions | `apps/api/src/lib/sessions.ts` |
-| Access granularity | None / view / edit per module (Sales, Vendors, Orders, Finance). Inventory is view for all, edit for admins only | `packages/shared/src/access.ts` |
+| Access granularity | None / view / edit per module (Sales, Vendors, Orders, Finance) **for admins and staff alike** (client decision, 23 Nov). Admins also get Inventory (view/edit) and Catalogue & prices (none/view/edit). Everyone views Inventory; only admins with edit change stock, prices or options. New admins default to full edit; admins who existed before were given full edit once | `packages/shared/src/access.ts` |
 | Production-step permissions for factory staff | Not separate: anyone with Orders edit can move stages | Order stage endpoint |
 | Forgotten password | An admin resets it in ops (temporary password, shown once) | Ops → People |
 | Who changes a sign-in email | Admins, in ops. People can't change their own | Ops → Edit person |

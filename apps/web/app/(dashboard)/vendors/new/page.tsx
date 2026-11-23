@@ -14,7 +14,7 @@ export default async function NewVendorPage() {
   return (
     <div className="mx-auto max-w-4xl">
       <PageHeader title="Add vendor" description="The vendor ID is created automatically when you save." />
-      <VendorForm isAdmin={me.role === "admin"} defaultRates={defaults.ok ? defaults.data : {}} />
+      <VendorForm isAdmin={me.settings === "edit"} defaultRates={defaults.ok ? defaults.data : {}} />
     </div>
   );
 }

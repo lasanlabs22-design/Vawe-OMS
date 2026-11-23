@@ -15,6 +15,13 @@
       "when": 1795417186110,
       "tag": "0001_stormy_lizard",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795427187119,
+      "tag": "0002_cooing_slyde",
+      "breakpoints": true
     }
   ]
 }

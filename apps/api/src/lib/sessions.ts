@@ -3,7 +3,7 @@ import type { Context } from "hono";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import { and, eq, gt, ne } from "drizzle-orm";
 import { sessions, userPermissions, userPhotos, users, type Db } from "@vawe/db";
-import type { GrantableModule, Permissions } from "@vawe/shared";
+import type { PermissionKey, Permissions } from "@vawe/shared";
 import { env } from "../env";
 import type { AuthedUser, Scope } from "../types";
 import { clientIp } from "./http";
@@ -58,7 +58,7 @@ export async function endAllSessions(db: Db, userId: string, keepTokenHash?: str
 
 export async function loadPermissions(db: Db, userId: string): Promise<Permissions> {
   const rows = await db.select().from(userPermissions).where(eq(userPermissions.userId, userId));
-  return Object.fromEntries(rows.map((r) => [r.module as GrantableModule, r.level]));
+  return Object.fromEntries(rows.map((r) => [r.module as PermissionKey, r.level]));
 }
 
 const TOUCH_AFTER_MS = 5 * 60_000;
@@ -105,7 +105,7 @@ export async function readSession(c: Context, db: Db, scope: Scope): Promise<{ u
       emergencyPhone: user.emergencyPhone,
       photoAt: row.photoAt,
       role: user.role,
-      permissions: user.role === "admin" ? {} : await loadPermissions(db, user.id),
+      permissions: await loadPermissions(db, user.id),
       mustChangePassword: user.mustChangePassword,
     },
   };

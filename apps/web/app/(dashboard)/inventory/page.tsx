@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AlertTriangle } from "lucide-react";
 import {
+  canEdit,
   INVENTORY_CATEGORIES,
   INVENTORY_CATEGORY_LABELS,
   UNIT_LABELS,
@@ -31,8 +32,8 @@ const TABS = [
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ tab?: string; cat?: string; q?: string; low?: string }> }) {
   const me = await requireMe();
-  // Everyone may view inventory; only admins change it (fixed rule).
-  const isAdmin = me.role === "admin";
+  // Everyone may view inventory; changing it needs an admin with Inventory: edit.
+  const isAdmin = canEdit(me, "inventory");
   const sp = await searchParams;
   const tab = TABS.some((t) => t.value === sp.tab) ? sp.tab! : "stock";
 
@@ -130,7 +131,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
             );
           })}
         </div>
-        {!isAdmin && <p className="text-[13px] text-ink-3">Only admins can change stock.</p>}
+        {!isAdmin && <p className="text-[13px] text-ink-3">View only. Stock is changed by admins with Inventory edit access.</p>}
       </div>
     );
   } else if (tab === "usage") {
@@ -224,7 +225,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
 
   return (
     <UrlStateProvider>
-      <PageHeader title="Inventory" description={isAdmin ? "Stock by item and colour. You can add items and move stock." : "Stock by item and colour. View only: admins update stock."}>
+      <PageHeader title="Inventory" description={isAdmin ? "Stock by item and colour. You can add items and move stock." : "Stock by item and colour. View only."}>
         {isAdmin && tab === "stock" && <AddItem />}
       </PageHeader>
       <Tabs tabs={TABS} value={tab} />

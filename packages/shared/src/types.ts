@@ -20,6 +20,8 @@ export interface Me extends Profile {
   role: Role;
   permissions: Permissions;
   access: Record<Module, Access>;
+  /** Catalogue & prices: admins with Catalogue & prices access only. */
+  settings: Access;
   mustChangePassword: boolean;
 }
 

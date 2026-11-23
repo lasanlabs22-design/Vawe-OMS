@@ -14,9 +14,10 @@ import {
 
 export const userRole = pgEnum("user_role", ["admin", "staff"]);
 export const bloodGroup = pgEnum("blood_group", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]);
-// Modules an admin can grant to staff. Inventory is deliberately absent: everyone views it and only
-// admins change stock, so there's nothing to grant.
-export const grantableModule = pgEnum("grantable_module", ["sales", "vendor", "order", "finance"]);
+// What can be granted per person in ops. The first four apply to admins and staff alike; inventory
+// (changing stock) and settings (catalogue & prices) can only be held by admins. Everyone views
+// inventory regardless.
+export const grantableModule = pgEnum("grantable_module", ["sales", "vendor", "order", "finance", "inventory", "settings"]);
 export const accessLevel = pgEnum("access_level", ["view", "edit"]);
 // app = app.vaweinterio.in (the dashboard), ops = ops.vaweinterio.in (people and access).
 export const sessionScope = pgEnum("session_scope", ["app", "ops"]);
@@ -55,8 +56,7 @@ export const users = pgTable(
   (t) => [uniqueIndex("users_email_idx").on(t.email)],
 );
 
-// What each staff member may do in each grantable module. No row = no access. Admins have no rows:
-// they can do everything.
+// What each person may do in each grantable area. No row = no access (inventory: view only).
 export const userPermissions = pgTable(
   "user_permissions",
   {
