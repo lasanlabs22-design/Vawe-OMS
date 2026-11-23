@@ -41,7 +41,6 @@ const SLIDING_DIVIDERS = ["Top Only", "Bottom Only", "Top and Bottom", "Double C
 function blankItem(catalog: Catalog, key: number, from?: Partial<ItemDraft>): ItemDraft {
   const ot = catalog.orderTypes.find((o) => o.isActive)!;
   return {
-    key,
     orderType: ot?.name ?? "",
     frameType: catalog.frameTypes.find((f) => f.isActive)?.name ?? "",
     frameColour: catalog.frameColours.find((f) => f.isActive)?.name ?? "",

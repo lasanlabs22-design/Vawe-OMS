@@ -11,7 +11,7 @@ import { cx } from "@/lib/cx";
 // ---------- Formats ----------
 // Server pages can't hand functions to these client components, so they name a format instead.
 
-export type Fmt = "number" | "money" | "moneyShort" | "percent" | "days" | ((n: number) => string);
+export type Fmt = "number" | "decimal" | "money" | "moneyShort" | "percent" | "days" | ((n: number) => string);
 
 const inr = new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 });
 function moneyShortFmt(n: number): string {
@@ -23,6 +23,7 @@ function moneyShortFmt(n: number): string {
 }
 const FORMATS: Record<Exclude<Fmt, (n: number) => string>, (n: number) => string> = {
   number: (n) => Math.round(n).toLocaleString("en-IN"),
+  decimal: (n) => n.toLocaleString("en-IN", { maximumFractionDigits: 2 }),
   money: (n) => inr.format(n),
   moneyShort: moneyShortFmt,
   percent: (n) => `${Math.round(n)}%`,
@@ -123,6 +124,7 @@ const compact = (n: number) => {
   if (a >= 1e7) return `${+(n / 1e7).toFixed(1)}Cr`;
   if (a >= 1e5) return `${+(n / 1e5).toFixed(1)}L`;
   if (a >= 1e4) return `${+(n / 1e3).toFixed(0)}K`;
+  if (a < 100 && !Number.isInteger(n)) return n.toLocaleString("en-IN", { maximumFractionDigits: 1 });
   return Math.round(n).toLocaleString("en-IN");
 };
 

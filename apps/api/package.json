@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.17",
+    "exceljs": "4.4.0",
     "tsup": "^9.0.0"
   }
 }
