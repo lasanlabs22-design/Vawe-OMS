@@ -121,7 +121,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
             </div>
           </dl>
           {seeFinance && o.balance > 0 && o.stage !== "cancelled" && (
-            <Link href={`/finance?tab=payments&record=${o.id}`} className="mt-4 inline-flex h-9 items-center rounded-lg bg-brand px-3 text-[13px] font-medium text-white hover:bg-brand-strong">
+            <Link href={`/finance?tab=payments&record=${o.id}`} className="mt-4 inline-flex h-9 items-center rounded-lg bg-solid px-3 text-[13px] font-medium text-on-solid hover:bg-solid/85">
               Record a payment
             </Link>
           )}

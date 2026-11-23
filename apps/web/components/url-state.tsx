@@ -52,7 +52,7 @@ export function Tabs({ name = "tab", tabs, value }: { name?: string; tabs: { val
           onClick={() => set({ [name]: t.value === tabs[0]!.value ? null : t.value })}
           className={cx(
             "h-9 shrink-0 rounded-lg px-3.5 text-sm font-medium whitespace-nowrap transition-colors",
-            value === t.value ? "bg-brand text-white shadow-sm" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
+            value === t.value ? "bg-solid text-on-solid shadow-sm" : "text-ink-2 hover:bg-surface-2 hover:text-ink",
           )}
         >
           {t.label}

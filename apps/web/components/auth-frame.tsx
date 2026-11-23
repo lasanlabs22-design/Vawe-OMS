@@ -12,13 +12,18 @@ export function AuthFrame({ area, title, subtitle, children }: { area: string; t
         <div className="relative z-10 max-w-md">
           <p className="animate-rise text-[12px] font-medium tracking-[0.24em] text-white/50 uppercase [animation-delay:80ms]">{area}</p>
           <p className="animate-rise mt-5 font-display text-5xl leading-[1.08] tracking-tight [animation-delay:160ms]">
-            Orders, production and payments, <span className="text-pink">in one place.</span>
+            Orders, production and payments, <span className="text-gold">in one place.</span>
           </p>
           <p className="animate-rise mt-5 text-white/60 [animation-delay:240ms]">For the Vawe Interio team only. Access is given by an admin.</p>
         </div>
         <p className="relative z-10 text-xs text-white/40">© {new Date().getFullYear()} Vawe Interio</p>
-        <div aria-hidden className="animate-drift pointer-events-none absolute -right-28 -bottom-32 opacity-[0.08]">
-          <LogoMark size={560} />
+        {/* The logo as a faint watermark, fixed in the exact middle of the panel, behind the text. */}
+        <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
+          <div className="opacity-[0.07]">
+            <div className="animate-fade">
+              <LogoMark size={460} />
+            </div>
+          </div>
         </div>
       </aside>
 

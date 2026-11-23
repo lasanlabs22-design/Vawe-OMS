@@ -10,7 +10,7 @@ export { cx };
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 const VARIANTS: Record<Variant, string> = {
-  primary: "bg-brand text-white hover:bg-brand-strong shadow-sm",
+  primary: "bg-solid text-on-solid hover:bg-solid/85 shadow-sm",
   secondary: "bg-surface text-ink border border-line hover:bg-surface-2",
   ghost: "text-ink-2 hover:bg-surface-2 hover:text-ink",
   danger: "bg-surface text-bad border border-line hover:bg-bad-soft",

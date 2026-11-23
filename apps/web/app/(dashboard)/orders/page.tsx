@@ -40,7 +40,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <UrlStateProvider>
       <PageHeader title="Orders" description="Every order from design to delivery.">
         {canEdit(me, "order") && (
-          <Link href="/orders/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-brand px-4 text-sm font-medium text-white shadow-sm hover:bg-brand-strong">
+          <Link href="/orders/new" className="inline-flex h-10 items-center gap-2 rounded-lg bg-solid px-4 text-sm font-medium text-on-solid shadow-sm hover:bg-solid/85">
             <Plus size={17} /> New order
           </Link>
         )}

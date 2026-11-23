@@ -245,7 +245,7 @@ export function VendorForm({ vendor, isAdmin, defaultRates }: { vendor?: VendorD
                 aria-checked={d.pricingModel === m}
                 disabled={!isAdmin && !!vendor}
                 onClick={() => set("pricingModel", m)}
-                className={cx("h-8 rounded-md px-3 text-[13px] font-medium disabled:cursor-not-allowed", d.pricingModel === m ? "bg-brand text-white shadow-sm" : "text-ink-2")}
+                className={cx("h-8 rounded-md px-3 text-[13px] font-medium disabled:cursor-not-allowed", d.pricingModel === m ? "bg-solid text-on-solid shadow-sm" : "text-ink-2")}
               >
                 {m === "rft" ? "RFT pricing" : "SQFT pricing"}
               </button>
