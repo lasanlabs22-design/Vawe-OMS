@@ -605,6 +605,125 @@ export function DailyBars({
   );
 }
 
+// ---------- Month calendar ----------
+
+/**
+ * One month as a wall calendar (Monday first). Each day is shaded by its count, one hue light to
+ * dark, with the count written on it. Days still to come are left blank.
+ */
+export function MonthCalendar({
+  days,
+  today,
+  color = "var(--chart-4)",
+  label = "orders",
+}: {
+  days: { date: string; count: number }[];
+  today: string;
+  color?: string;
+  label?: string;
+}) {
+  const [ref, seen] = useSeen<HTMLDivElement>();
+  const max = Math.max(1, ...days.map((d) => d.count));
+  const lead = days[0] ? (new Date(`${days[0].date}T00:00:00Z`).getUTCDay() + 6) % 7 : 0;
+  const level = (n: number) => (n === 0 ? 0 : Math.ceil((n / max) * 4));
+  const MIX = [0, 28, 50, 74, 100];
+  const fmt = (d: string) => new Intl.DateTimeFormat("en-IN", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
+
+  return (
+    <div ref={ref}>
+      <div className="mb-1.5 grid grid-cols-7 gap-1.5 text-center text-[11px] font-medium text-ink-3">
+        {["M", "T", "W", "T", "F", "S", "S"].map((d, i) => (
+          <span key={i}>{d}</span>
+        ))}
+      </div>
+      <div className="grid grid-cols-7 gap-1.5" role="img" aria-label={`${days.reduce((s, d) => s + d.count, 0)} ${label} this month`}>
+        {Array.from({ length: lead }, (_, i) => (
+          <span key={`lead-${i}`} />
+        ))}
+        {days.map((d, i) => {
+          const future = d.date > today;
+          const l = level(d.count);
+          return (
+            <span
+              key={d.date}
+              title={future ? fmt(d.date) : `${fmt(d.date)}: ${d.count} ${label}`}
+              className={cx(
+                "relative flex aspect-square flex-col items-center justify-center rounded-lg text-[10.5px] tabular-nums transition-opacity",
+                future && "border border-dashed border-line text-ink-3",
+                d.date === today && "ring-2 ring-ink/70 ring-offset-1 ring-offset-surface",
+              )}
+              style={{
+                background: future ? undefined : l === 0 ? "var(--surface-2)" : `color-mix(in oklab, ${color} ${MIX[l]}%, var(--surface))`,
+                color: !future && l >= 3 ? "white" : undefined,
+                opacity: seen ? 1 : 0,
+                transitionDuration: "400ms",
+                transitionDelay: `${i * 14}ms`,
+              }}
+            >
+              <span className={cx("leading-none", !future && l < 3 && "text-ink-3")}>{Number(d.date.slice(8, 10))}</span>
+              {!future && d.count > 0 && <span className="mt-0.5 text-[12.5px] leading-none font-semibold">{d.count}</span>}
+            </span>
+          );
+        })}
+      </div>
+      <div className="mt-3 flex items-center justify-end gap-1 text-[12px] text-ink-3">
+        Fewer
+        {[0, 1, 2, 3, 4].map((l) => (
+          <span key={l} className="size-[11px] rounded-[3px]" style={{ background: l === 0 ? "var(--surface-2)" : `color-mix(in oklab, ${color} ${MIX[l]}%, var(--surface))` }} />
+        ))}
+        More {label}
+      </div>
+    </div>
+  );
+}
+
+// ---------- Capsule columns ----------
+
+/** A few periods side by side as rounded columns, oldest first. The highlighted one is solid. */
+export function CapsuleColumns({
+  cols,
+  color = "var(--chart-1)",
+  height = 150,
+  format = (n) => n.toLocaleString("en-IN"),
+}: {
+  cols: { label: string; value: number; sub?: string; highlight?: boolean }[];
+  color?: string;
+  height?: number;
+  format?: (n: number) => string;
+}) {
+  const [ref, seen] = useSeen<HTMLDivElement>();
+  const max = Math.max(1, ...cols.map((c) => c.value));
+  return (
+    <div ref={ref} role="img" aria-label={cols.map((c) => `${c.label}: ${format(c.value)}`).join(", ")}>
+      <div className="flex items-end justify-around gap-3" style={{ height }}>
+        {cols.map((c, i) => (
+          <div key={c.label} className="flex h-full min-w-0 flex-1 flex-col items-center justify-end" title={`${c.label}: ${format(c.value)}`}>
+            <span className={cx("mb-1.5 text-[13px] tabular-nums", c.highlight ? "font-semibold" : "text-ink-2")}>{format(c.value)}</span>
+            <div
+              className="w-full max-w-12 rounded-full"
+              style={{
+                height: seen ? `${Math.max(c.value ? 10 : 4, (c.value / max) * (height - 28))}px` : "0px",
+                background: c.highlight
+                  ? `linear-gradient(180deg, ${color}, color-mix(in oklab, ${color} 60%, var(--surface)))`
+                  : `color-mix(in oklab, ${color} 22%, var(--surface-2))`,
+                transition: `height 900ms ${EASE} ${i * 110}ms`,
+              }}
+            />
+          </div>
+        ))}
+      </div>
+      <div className="mt-2 flex justify-around gap-3 border-t border-line pt-2">
+        {cols.map((c) => (
+          <div key={c.label} className="min-w-0 flex-1 text-center">
+            <p className={cx("truncate text-[12.5px]", c.highlight ? "font-semibold" : "text-ink-2")}>{c.label}</p>
+            {c.sub && <p className="truncate text-[11.5px] text-ink-3">{c.sub}</p>}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ---------- Split bars ----------
 
 /**

@@ -1,12 +1,11 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowDownRight, ArrowUpRight, Boxes, CalendarDays, Clock3, Factory, Handshake, PieChart, TrendingUp, Wallet } from "lucide-react";
+import { ArrowUpRight, Boxes, CalendarDays, Clock3, Factory, Handshake, PieChart, TrendingUp, Wallet } from "lucide-react";
 import { STAGE_LABELS, UNIT_LABELS, type InventoryUnit, type OrderStage } from "@vawe/shared";
-import { change, CountUp } from "../charts";
-import { BulletList, CalendarHeatmap, DailyBars, Donut, Ring, SegmentedBar, StageFlow, VizCard, Waffle } from "../viz";
-import { cx } from "@/lib/cx";
-import { dayLabel, dayLong } from "@/lib/dates";
+import { CountUp } from "../charts";
+import { MonthHero } from "../sales/month-hero";
+import { BulletList, CalendarHeatmap, Donut, Ring, SegmentedBar, StageFlow, VizCard, Waffle } from "../viz";
 import { moneyShort } from "@/lib/format";
 
 export interface OverviewData {
@@ -45,18 +44,8 @@ function More({ href, label = "Open" }: { href: string; label?: string }) {
   );
 }
 
-function Fact({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 sm:flex sm:items-baseline sm:justify-between sm:gap-3">
-      <dt className="truncate text-[12px] text-ink-3">{label}</dt>
-      <dd className="text-[15px] font-semibold tabular-nums">{value}</dd>
-    </div>
-  );
-}
-
 export function OverviewView({ data }: { data: OverviewData }) {
   const { orders, sales, finance, vendor, inventory } = data;
-  const growth = sales ? change(sales.monthValue, sales.lastMonthToDate) : null;
   const collectedShare = finance ? finance.collectedThisMonth / Math.max(1, finance.collectedThisMonth + finance.receivable) : 0;
   const lineTotal = inventory.lines.ok + inventory.lines.low + inventory.lines.out;
 
@@ -64,35 +53,14 @@ export function OverviewView({ data }: { data: OverviewData }) {
     <div className="grid gap-5 lg:grid-cols-6">
       {sales && (
         <VizCard icon={TrendingUp} tone="var(--chart-1)" title="Sales this month" subtitle="Order value before GST" className="lg:col-span-4" action={<More href="/sales" />}>
-          <div className="grid gap-6 sm:grid-cols-[13rem_minmax(0,1fr)]">
-            <div className="min-w-0">
-              <CountUp value={sales.monthValue} format="moneyShort" className="block text-[2.5rem] leading-none font-semibold tracking-tight tabular-nums" />
-              {growth !== null && (
-                <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-[12.5px] text-ink-3">
-                  <span className={cx("inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 font-semibold", growth >= 0 ? "bg-good-soft text-good" : "bg-bad-soft text-bad")}>
-                    {growth >= 0 ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    {Math.abs(Math.round(growth))}%
-                  </span>
-                  vs the same days last month
-                </p>
-              )}
-              <dl className="mt-5 grid grid-cols-3 gap-3 border-t border-line pt-4 sm:grid-cols-1 sm:gap-2.5">
-                <Fact label="Orders" value={sales.monthOrders.toLocaleString("en-IN")} />
-                <Fact label="Average order" value={sales.monthOrders ? moneyShort(sales.monthValue / sales.monthOrders) : "None yet"} />
-                <Fact label="Last month in all" value={moneyShort(sales.lastMonthTotal)} />
-              </dl>
-            </div>
-            <div className="min-w-0">
-              <p className="mb-3 flex flex-wrap items-center justify-between gap-x-3 text-[12.5px] text-ink-3">
-                <span>Order value per day, last 30 days</span>
-                <span className="flex items-center gap-1.5">
-                  <span aria-hidden className="w-4 border-t border-dashed border-ink-3" />
-                  avg {moneyShort(sales.daily.reduce((s, d) => s + d.value, 0) / Math.max(1, sales.daily.length))} a day
-                </span>
-              </p>
-              <DailyBars days={sales.daily.map((d) => ({ label: dayLabel(d.date), title: dayLong(d.date), value: d.value }))} format={moneyShort} height={170} />
-            </div>
-          </div>
+          <MonthHero
+            value={sales.monthValue}
+            orders={sales.monthOrders}
+            before={sales.lastMonthToDate}
+            lastMonthTotal={sales.lastMonthTotal}
+            daily={sales.daily}
+            caption="Order value per day, last 30 days"
+          />
         </VizCard>
       )}
 
