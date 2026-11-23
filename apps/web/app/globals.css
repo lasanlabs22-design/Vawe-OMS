@@ -21,12 +21,16 @@
   --warn-soft: #fdf1dc;
   --bad: #c8233a;
   --bad-soft: #fce6e9;
+  /* Chart series (validated for colour-blind separation on this surface): pink, then blue. */
+  --chart-1: #e6005b;
+  --chart-2: #2a78d6;
+  --chart-grid: #ece7e0;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --brand: #ff3d86;
+    --brand: #f2357a;
     --brand-strong: #ff8fb8;
     --brand-soft: #3a0f22;
     --bg: #0b0b0c; /* onyx */
@@ -42,6 +46,9 @@
     --warn-soft: #2b2010;
     --bad: #ff6b7d;
     --bad-soft: #2e1218;
+    --chart-1: #f2357a;
+    --chart-2: #3987e5;
+    --chart-grid: #26262b;
     color-scheme: dark;
   }
 }
@@ -51,6 +58,9 @@
   --color-brand-strong: var(--brand-strong);
   --color-brand-soft: var(--brand-soft);
   --color-onyx: var(--onyx);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-grid: var(--chart-grid);
   --color-pink: #fa0365;
   --font-display: var(--font-dm-serif), Georgia, serif;
   --color-bg: var(--bg);

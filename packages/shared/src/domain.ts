@@ -53,6 +53,24 @@ export const PAYMENT_TERM_LABELS: Record<PaymentTerms, string> = {
   custom: "Custom",
 };
 
+/** When payment is expected, in words, for orders not yet delivered. */
+export function paymentTermsText(terms: PaymentTerms, customDays?: number | null): string {
+  switch (terms) {
+    case "advance":
+      return "Advance, before production";
+    case "before_delivery":
+      return "Before delivery";
+    case "net_15":
+      return "15 days after delivery";
+    case "net_30":
+      return "30 days after delivery";
+    case "monthly":
+      return "Monthly, after delivery";
+    case "custom":
+      return customDays != null ? `${customDays} days after delivery` : "Custom terms";
+  }
+}
+
 /** Days after delivery that payment falls due, per term. `custom` uses the vendor's own number. */
 export const PAYMENT_TERM_DAYS: Record<Exclude<PaymentTerms, "custom">, number> = {
   advance: 0,
