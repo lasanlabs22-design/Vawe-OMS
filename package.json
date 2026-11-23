@@ -1,0 +1,21 @@
+{
+  "name": "vawe-oms",
+  "private": true,
+  "packageManager": "pnpm@9.1.4",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @vawe/api --filter @vawe/web dev",
+    "build": "pnpm --filter @vawe/api build && pnpm --filter @vawe/web build",
+    "typecheck": "pnpm -r typecheck",
+    "db:generate": "pnpm --filter @vawe/db generate",
+    "db:migrate": "pnpm --filter @vawe/db migrate",
+    "admin": "pnpm --filter @vawe/api admin"
+  },
+  "devDependencies": {
+    "@types/node": "22",
+    "tsx": "^4.23.15",
+    "typescript": "5"
+  }
+}

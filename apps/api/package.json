@@ -1,0 +1,27 @@
+{
+  "name": "@vawe/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "admin": "tsx --env-file-if-exists=.env scripts/admin.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^2.1.11",
+    "@vawe/db": "workspace:^",
+    "@vawe/shared": "workspace:^",
+    "bcryptjs": "^3.0.3",
+    "drizzle-orm": "^0.45.4",
+    "hono": "^4.13.20",
+    "postgres": "3",
+    "zod": "4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "tsup": "^9.0.0"
+  }
+}

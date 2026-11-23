@@ -1,0 +1,134 @@
+@import "tailwindcss";
+
+/* Design tokens, taken from the Vawe website (Vawe Pink and onyx on warm porcelain). Components use
+   the Tailwind names below (bg-surface, text-ink-2, border-line…), so a theme change only touches
+   these variables. Dark mode follows the device setting. */
+:root {
+  --brand: #e6005b; /* Vawe CTA pink: white text on it passes contrast */
+  --brand-strong: #c2004d;
+  --brand-soft: #fde4ee;
+  --onyx: #0b0b0c;
+  --bg: #f5f1ec; /* porcelain */
+  --surface: #ffffff;
+  --surface-2: #f3efe9;
+  --line: #e5ded5;
+  --ink: #161618;
+  --ink-2: #4a4a4d;
+  --ink-3: #8a8a8f;
+  --good: #0f8a4f;
+  --good-soft: #e3f5ec;
+  --warn: #a86300;
+  --warn-soft: #fdf1dc;
+  --bad: #c8233a;
+  --bad-soft: #fce6e9;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --brand: #ff3d86;
+    --brand-strong: #ff8fb8;
+    --brand-soft: #3a0f22;
+    --bg: #0b0b0c; /* onyx */
+    --surface: #141416;
+    --surface-2: #1f1f22;
+    --line: #2a2a2e;
+    --ink: #f5f1ec;
+    --ink-2: #bdb8b1;
+    --ink-3: #807c77;
+    --good: #45c486;
+    --good-soft: #10271c;
+    --warn: #e3a440;
+    --warn-soft: #2b2010;
+    --bad: #ff6b7d;
+    --bad-soft: #2e1218;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-onyx: var(--onyx);
+  --color-pink: #fa0365;
+  --font-display: var(--font-dm-serif), Georgia, serif;
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-line: var(--line);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-good: var(--good);
+  --color-good-soft: var(--good-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-bad: var(--bad);
+  --color-bad-soft: var(--bad-soft);
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Motion. Everything animated uses these, and all of it switches off under reduced motion. */
+  --animate-rise: rise 520ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  --animate-fade: fade 300ms ease-out both;
+  --animate-drift: drift 18s ease-in-out infinite alternate;
+
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  @keyframes drift {
+    from {
+      transform: rotate(-4deg) translateY(0);
+    }
+    to {
+      transform: rotate(3deg) translateY(-18px);
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+html,
+body {
+  background: var(--bg);
+  color: var(--ink);
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+dialog::backdrop {
+  background: rgb(10 10 14 / 0.5);
+  backdrop-filter: blur(2px);
+}
