@@ -60,6 +60,15 @@ export interface ActivityEntry {
   createdAt: string;
 }
 
+/** One page of a month's activity (India time), newest first. */
+export interface ActivityPage {
+  month: string;
+  page: number;
+  pages: number;
+  total: number;
+  entries: ActivityEntry[];
+}
+
 /** Every error the API returns has this shape. */
 export interface ApiError {
   error: string;

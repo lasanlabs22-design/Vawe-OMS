@@ -1,6 +1,6 @@
 import { Hono } from "hono";
 import { alias } from "drizzle-orm/pg-core";
-import { and, asc, desc, eq, ne, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, lt, ne, sql } from "drizzle-orm";
 import { activityLog, getDb, userPermissions, userPhotos, users, type Db } from "@vawe/db";
 import {
   cleanPermissions,
@@ -9,6 +9,7 @@ import {
   PERMISSION_KEYS,
   updateUserSchema,
   type ActivityEntry,
+  type ActivityPage,
   type IssuedCredentials,
   type PermissionKey,
   type Permissions,
@@ -17,6 +18,7 @@ import {
 } from "@vawe/shared";
 import { env } from "../env";
 import { logActivity } from "../lib/activity";
+import { isMonth, shiftMonth, todayIST } from "../lib/dates";
 import { clientIp, fail, idParam, readBody } from "../lib/http";
 import { hashPassword, temporaryPassword } from "../lib/passwords";
 import { photoUrl } from "../lib/photos";
@@ -238,11 +240,23 @@ opsUsers.post("/users/:id/status", async (c) => {
   return c.json({ ok: true });
 });
 
+const ACTIVITY_PAGE_SIZE = 50;
+
+// One month at a time (India time), in pages of 50, newest first.
 opsUsers.get("/activity", async (c) => {
   const db = await getDb();
   const actor = alias(users, "actor");
   const target = alias(users, "target");
-  const limit = Math.min(Math.max(Number(c.req.query("limit")) || 100, 1), 500);
+  const q = c.req.query("month");
+  const month = isMonth(q) ? q : todayIST().slice(0, 7);
+  const inMonth = and(
+    gte(activityLog.createdAt, new Date(`${month}-01T00:00:00+05:30`)),
+    lt(activityLog.createdAt, new Date(`${shiftMonth(month, 1)}-01T00:00:00+05:30`)),
+  );
+  const [counted] = await db.select({ total: count() }).from(activityLog).where(inMonth);
+  const total = counted?.total ?? 0;
+  const pages = Math.max(1, Math.ceil(total / ACTIVITY_PAGE_SIZE));
+  const page = Math.min(Math.max(Math.trunc(Number(c.req.query("page"))) || 1, 1), pages);
   const rows = await db
     .select({
       id: activityLog.id,
@@ -255,9 +269,11 @@ opsUsers.get("/activity", async (c) => {
     .from(activityLog)
     .leftJoin(actor, eq(actor.id, activityLog.actorId))
     .leftJoin(target, eq(target.id, activityLog.targetUserId))
-    .orderBy(desc(activityLog.createdAt))
-    .limit(limit);
+    .where(inMonth)
+    .orderBy(desc(activityLog.createdAt), desc(activityLog.id))
+    .limit(ACTIVITY_PAGE_SIZE)
+    .offset((page - 1) * ACTIVITY_PAGE_SIZE);
 
   const entries: ActivityEntry[] = rows.map((r) => ({ ...r, createdAt: r.createdAt.toISOString() }));
-  return c.json(entries);
+  return c.json({ month, page, pages, total, entries } satisfies ActivityPage);
 });
