@@ -1,3 +1,4 @@
+import { constants, publicEncrypt } from "node:crypto";
 import { checkGstin, type GstLookup } from "@vawe/shared";
 
 // GSTIN lookup. The offline check (format, check digit, state) always runs and is free. When a GST API
@@ -5,9 +6,20 @@ import { checkGstin, type GstLookup } from "@vawe/shared";
 //
 //   GST_PROVIDER=cashfree
 //   CASHFREE_CLIENT_ID=...  CASHFREE_CLIENT_SECRET=...  CASHFREE_ENV=sandbox|production
+//   CASHFREE_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."   (when Cashfree's 2FA method is Public Key)
 //
 // Field names follow Cashfree's Verification API (confirmed against the sandbox). The mapping is
-// tolerant of missing fields. Cashfree also requires the caller's IP to be whitelisted.
+// tolerant of missing fields. Cashfree checks every call by IP whitelist or, with the Public Key
+// method, by a signature: Railway has no fixed outgoing IP, so production uses the signature.
+
+/** Cashfree's 2FA signature: "clientId.unixSeconds" encrypted with RSA-OAEP (SHA-1), base64. Valid 5 minutes. */
+function signature(clientId: string): string | undefined {
+  // Accepts the PEM as written, or on one line with \n escapes (some hosts store it that way).
+  const pem = process.env.CASHFREE_PUBLIC_KEY?.replace(/\\n/g, "\n").trim();
+  if (!pem) return undefined;
+  const payload = Buffer.from(`${clientId}.${Math.floor(Date.now() / 1000)}`);
+  return publicEncrypt({ key: pem, padding: constants.RSA_PKCS1_OAEP_PADDING, oaepHash: "sha1" }, payload).toString("base64");
+}
 
 export async function lookupGstin(input: string): Promise<GstLookup> {
   const check = checkGstin(input);
@@ -19,6 +31,13 @@ export async function lookupGstin(input: string): Promise<GstLookup> {
   }
 
   const host = process.env.CASHFREE_ENV === "production" ? "https://api.cashfree.com" : "https://sandbox.cashfree.com";
+  let signed: string | undefined;
+  try {
+    signed = signature(process.env.CASHFREE_CLIENT_ID);
+  } catch (err) {
+    console.error("CASHFREE_PUBLIC_KEY can't be used:", (err as Error).message);
+    return { ...base, message: "The GST lookup is misconfigured (the Cashfree public key can't be read). The GSTIN itself looks right." };
+  }
   try {
     const res = await fetch(`${host}/verification/gstin`, {
       method: "POST",
@@ -26,6 +45,7 @@ export async function lookupGstin(input: string): Promise<GstLookup> {
         "content-type": "application/json",
         "x-client-id": process.env.CASHFREE_CLIENT_ID,
         "x-client-secret": process.env.CASHFREE_CLIENT_SECRET,
+        ...(signed ? { "x-cf-signature": signed } : {}),
       },
       body: JSON.stringify({ GSTIN: check.gstin }),
       signal: AbortSignal.timeout(10_000),

@@ -80,7 +80,7 @@ One Railway project, three services: **Postgres**, **api** and **web**. Connect 
 - Give the **web** service both custom domains, `app.vaweinterio.in` and `ops.vaweinterio.in`, and add the CNAME records Railway shows at the DNS provider.
 - The API migrates the database itself on start-up, then fills in the catalogue, stock list and walk-in vendor if they're missing.
 - Create the first admin from your machine with the **public** Postgres URL: put `DATABASE_URL=<DATABASE_PUBLIC_URL>` in `apps/api/.env`, then `pnpm admin --email … --name "…"`. Remove it from `.env` afterwards.
-- Optional, once the client has keys: `GST_PROVIDER=cashfree`, `CASHFREE_CLIENT_ID`, `CASHFREE_CLIENT_SECRET`, `CASHFREE_ENV=sandbox|production` on the api service turn on GSTIN company-detail lookup. Until then GSTINs are still checked offline (format, check digit, state).
+- Optional, once the client has keys: `GST_PROVIDER=cashfree`, `CASHFREE_CLIENT_ID`, `CASHFREE_CLIENT_SECRET`, `CASHFREE_ENV=sandbox|production` on the api service turn on GSTIN company-detail lookup. Until then GSTINs are still checked offline (format, check digit, state). Cashfree only accepts whitelisted IPs or signed calls, and Railway has no fixed outgoing IP: in Cashfree (Developers → Two-Factor Authentication) switch the method to **Public Key**, generate the key, and set `CASHFREE_PUBLIC_KEY` to the `.pem` file's contents. The production download is password-protected (Cashfree emails the password).
 
 ## Security
 
