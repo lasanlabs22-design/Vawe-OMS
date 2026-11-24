@@ -19,7 +19,7 @@ The OMS was built before every question to the client was answered. Where an ans
 | Question | Default used |
 | --- | --- |
 | DWG | The drawing and job card the OMS generates from the items (confirmed by the client). Printed or saved as PDF from the browser |
-| Stages | Design → Q/A → DWG confirmation → Estimate confirmation → Payment/advance → Cutting → Drilling → Hinge holes → Glass cutting → Assembly → Packaging → Dispatched → Delivered (+ Cancelled) |
+| Stages | As in the client's PDF: In design → In QA → Waiting for DWG confirmation → Waiting for estimate confirmation → Waiting for advance confirmation → In production → Profile cutting → Glass cutting → Profile drill → Hinge hole → Assembly → Packing → Route planning, then Dispatched → Delivered (+ Cancelled). "On hold for procurement" is the hold below, not a stage |
 | Moving between stages | Any stage can be set, forwards or back. Every move is recorded with who and when |
 | Procurement hold | A flag on the order at any stage before dispatch. The stage stays the same; a held order can't move forward within production until it's released |
 | Stages per order or per item | Per order |

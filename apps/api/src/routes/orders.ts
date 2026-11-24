@@ -12,6 +12,7 @@ import {
   ORDER_STAGES,
   orderSchema,
   PAYMENT_TERM_DAYS,
+  PRODUCTION_STAGES,
   stageChangeSchema,
   stagePhase,
   STAGE_LABELS,
@@ -62,7 +63,7 @@ export async function listOrders(db: Db, f: OrderFilter = {}): Promise<OrderList
   if (f.ids) conds.push(inArray(orders.id, f.ids.length ? f.ids : ["00000000-0000-0000-0000-000000000000"]));
   if (f.phase === "active") conds.push(sql`${orders.stage} not in ('delivered', 'cancelled')`);
   if (f.phase === "pre") conds.push(inArray(orders.stage, ["design", "qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment"]));
-  if (f.phase === "production") conds.push(inArray(orders.stage, ["cutting", "drilling", "hinge_holes", "glass_cutting", "assembly", "packaging"]));
+  if (f.phase === "production") conds.push(inArray(orders.stage, PRODUCTION_STAGES));
   if (f.phase === "done") conds.push(inArray(orders.stage, ["dispatched", "delivered"]));
   if (f.q) {
     const like = `%${f.q.replace(/[%_]/g, "")}%`;

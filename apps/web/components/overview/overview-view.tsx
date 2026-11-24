@@ -86,7 +86,7 @@ export function OverviewView({ data }: { data: OverviewData }) {
         >
           <StageFlow
             stages={orders.stages.map((s) => ({
-              label: STAGE_LABELS[s.stage].replace("Awaiting ", "").replace(" confirmation", ""),
+              label: STAGE_LABELS[s.stage].replace("Waiting for ", "").replace(" confirmation", ""),
               count: s.count,
               href: `/orders?tab=all&stage=${s.stage}`,
               color: PRE.includes(s.stage) ? PHASE.pre.color : s.stage === "dispatched" ? PHASE.dispatched.color : PHASE.production.color,

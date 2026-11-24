@@ -114,18 +114,23 @@ export type FollowupStatus = (typeof FOLLOWUP_STATUSES)[number];
 
 // ---------- Orders ----------
 
+// The client's order tracking, in their order (requirements PDF). Stored keys never change once used:
+// only labels and order do, so existing orders stay valid. "On hold for procurement" is a hold on the
+// order, not a stage; dispatched and delivered follow route planning.
 export const ORDER_STAGES = [
   "design",
   "qa",
   "dwg_confirmation",
   "estimate_confirmation",
   "awaiting_payment",
+  "in_production",
   "cutting",
+  "glass_cutting",
   "drilling",
   "hinge_holes",
-  "glass_cutting",
   "assembly",
   "packaging",
+  "route_planning",
   "dispatched",
   "delivered",
   "cancelled",
@@ -134,16 +139,18 @@ export type OrderStage = (typeof ORDER_STAGES)[number];
 
 export const STAGE_LABELS: Record<OrderStage, string> = {
   design: "In design",
-  qa: "In Q/A",
-  dwg_confirmation: "Awaiting DWG confirmation",
-  estimate_confirmation: "Awaiting estimation confirmation",
-  awaiting_payment: "Awaiting payment / advance",
-  cutting: "Cutting",
-  drilling: "Drilling",
-  hinge_holes: "Hinge holes",
+  qa: "In QA",
+  dwg_confirmation: "Waiting for DWG confirmation",
+  estimate_confirmation: "Waiting for estimate confirmation",
+  awaiting_payment: "Waiting for advance confirmation",
+  in_production: "In production",
+  cutting: "Profile cutting",
   glass_cutting: "Glass cutting",
+  drilling: "Profile drill",
+  hinge_holes: "Hinge hole",
   assembly: "Assembly",
-  packaging: "Packaging",
+  packaging: "Packing",
+  route_planning: "Route planning",
   dispatched: "Dispatched",
   delivered: "Delivered",
   cancelled: "Cancelled",
@@ -151,7 +158,7 @@ export const STAGE_LABELS: Record<OrderStage, string> = {
 
 /** The order a job normally moves through (cancelled sits outside it). */
 export const STAGE_FLOW: OrderStage[] = ORDER_STAGES.filter((s) => s !== "cancelled");
-export const PRODUCTION_STAGES: OrderStage[] = ["cutting", "drilling", "hinge_holes", "glass_cutting", "assembly", "packaging"];
+export const PRODUCTION_STAGES: OrderStage[] = ["in_production", "cutting", "glass_cutting", "drilling", "hinge_holes", "assembly", "packaging", "route_planning"];
 export const PRE_PRODUCTION_STAGES: OrderStage[] = ["design", "qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment"];
 
 export function stagePhase(stage: OrderStage): "pre" | "production" | "done" | "cancelled" {

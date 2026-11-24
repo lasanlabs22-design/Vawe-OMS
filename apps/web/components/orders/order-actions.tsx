@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, ArrowRight, Ban, Check, PauseCircle, PlayCircle, RefreshCw } from "lucide-react";
-import { STAGE_FLOW, STAGE_LABELS, stagePhase, type OrderDetail, type OrderStage } from "@vawe/shared";
+import { PRODUCTION_STAGES, STAGE_FLOW, STAGE_LABELS, stagePhase, type OrderDetail, type OrderStage } from "@vawe/shared";
 import { api, ApiFailure } from "@/lib/client-api";
 import { Alert, Button, cx, Dialog, Field, Input, Select } from "../ui";
 
@@ -12,12 +12,12 @@ export function StageTrack({ order }: { order: OrderDetail }) {
   const current = STAGE_FLOW.indexOf(order.stage);
   const groups: { label: string; stages: OrderStage[] }[] = [
     { label: "Before production", stages: ["design", "qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment"] },
-    { label: "Production (route plan)", stages: ["cutting", "drilling", "hinge_holes", "glass_cutting", "assembly", "packaging"] },
+    { label: "Production", stages: PRODUCTION_STAGES },
     { label: "Delivery", stages: ["dispatched", "delivered"] },
   ];
   let n = 0;
   return (
-    <div className="grid gap-4 md:grid-cols-[5fr_6fr_2fr]">
+    <div className="grid gap-4 md:grid-cols-[minmax(0,5fr)_minmax(0,8fr)_minmax(0,2fr)]">
       {groups.map((g) => (
         <div key={g.label}>
           <p className="mb-2 text-[11.5px] font-medium tracking-wide text-ink-3 uppercase">{g.label}</p>
@@ -38,7 +38,7 @@ export function StageTrack({ order }: { order: OrderDetail }) {
                   />
                   <p className={cx("mt-1.5 hidden truncate text-[11px] lg:block", now ? "font-semibold text-ink" : done ? "text-ink-2" : "text-ink-3")}>
                     {done && <Check size={10} className="mr-0.5 inline" />}
-                    {STAGE_LABELS[s].replace("Awaiting ", "").replace("estimation ", "estimate ")}
+                    {STAGE_LABELS[s].replace("Waiting for ", "")}
                   </p>
                 </li>
               );
@@ -90,7 +90,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
       <div className="flex flex-wrap gap-2">
         {next && (
           <Button onClick={() => run("stage", { stage: next })} loading={busy && !dialog} disabled={!!blockedByHold} title={blockedByHold ? "Release the hold first" : undefined}>
-            Move to {STAGE_LABELS[next].replace("Awaiting ", "awaiting ")} <ArrowRight size={16} />
+            Move to {STAGE_LABELS[next].replace("Waiting ", "waiting ")} <ArrowRight size={16} />
           </Button>
         )}
         {prev && (
