@@ -3,7 +3,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Search } from "lucide-react";
-import { EXPENSE_CATEGORIES, EXPENSE_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_METHODS, type ExpenseCategory, type OrderOption, type PaymentMethod } from "@vawe/shared";
+import { EXPENSE_CATEGORIES, EXPENSE_LABELS, PAYMENT_METHOD_LABELS, PAYMENT_METHODS, type ExpenseCategory, type OrderOption, type PaymentMethod, type SupplierView } from "@vawe/shared";
 import { api, ApiFailure } from "@/lib/client-api";
 import { todayIST } from "@/lib/dates";
 import { money } from "@/lib/format";
@@ -300,6 +300,13 @@ export function AddPurchase() {
   const [purchasedOn, setDate] = useState(todayIST());
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
+  const [known, setKnown] = useState<string[]>([]);
+  useEffect(() => {
+    if (!open) return;
+    api<SupplierView[]>("GET", "/v1/inventory/suppliers")
+      .then((list) => setKnown(list.filter((s) => s.isActive).map((s) => s.name)))
+      .catch(() => setKnown([]));
+  }, [open]);
   const close = () => {
     setOpen(false);
     setSupplier("");
@@ -323,8 +330,13 @@ export function AddPurchase() {
         >
           {error && <Alert>{error.message}</Alert>}
           <div className="grid grid-cols-2 gap-4">
-            <Field label="Supplier" htmlFor="pur-sup">
-              <Input id="pur-sup" value={supplierName} onChange={(e) => setSupplier(e.target.value)} autoFocus />
+            <Field label="Supplier" htmlFor="pur-sup" hint={supplierName.trim() && !known.some((k) => k.toLowerCase() === supplierName.trim().toLowerCase()) ? "New: will be added to the supplier list" : undefined}>
+              <Input id="pur-sup" list="pur-sup-list" value={supplierName} onChange={(e) => setSupplier(e.target.value)} autoComplete="off" autoFocus />
+              <datalist id="pur-sup-list">
+                {known.map((n) => (
+                  <option key={n} value={n} />
+                ))}
+              </datalist>
             </Field>
             <Field label="Invoice no." htmlFor="pur-inv" optional>
               <Input id="pur-inv" value={invoiceNo} onChange={(e) => setInvoice(e.target.value)} />

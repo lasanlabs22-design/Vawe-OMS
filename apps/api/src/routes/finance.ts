@@ -1,6 +1,6 @@
 import { Hono } from "hono";
-import { and, desc, eq, gte, ilike, lte, ne, or } from "drizzle-orm";
-import { expenses, getDb, orderEvents, orderReturns, orders, payments, purchases, users, vendors } from "@vawe/db";
+import { and, desc, eq, gte, ilike, lte, ne, or, sql } from "drizzle-orm";
+import { expenses, getDb, orderEvents, orderReturns, orders, payments, purchases, suppliers, users, vendors } from "@vawe/db";
 import {
   EXPENSE_CATEGORIES,
   expenseSchema,
@@ -323,9 +323,16 @@ financeRoutes.get("/purchases", view, async (c) => {
 financeRoutes.post("/purchases", edit, async (c) => {
   const input = await readBody(c, purchaseSchema);
   const db = await getDb();
+  // Every purchase belongs to a supplier on the list; a name not seen before is added to it.
+  const byName = () => db.select().from(suppliers).where(sql`lower(${suppliers.name}) = lower(${input.supplierName})`).limit(1);
+  let [supplier] = await byName();
+  if (!supplier) {
+    await db.insert(suppliers).values({ name: input.supplierName }).onConflictDoNothing();
+    [supplier] = await byName();
+  }
   const [row] = await db
     .insert(purchases)
-    .values({ supplierName: input.supplierName, invoiceNo: input.invoiceNo ?? null, purchasedOn: input.purchasedOn, amount: input.amount, description: input.description ?? null, recordedBy: c.get("user").id })
+    .values({ supplierId: supplier!.id, supplierName: supplier!.name, invoiceNo: input.invoiceNo ?? null, purchasedOn: input.purchasedOn, amount: input.amount, description: input.description ?? null, recordedBy: c.get("user").id })
     .returning();
   return c.json(row, 201);
 });

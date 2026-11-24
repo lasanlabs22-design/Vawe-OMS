@@ -10,16 +10,17 @@ import {
   type InventoryItemView,
   type InventoryUsage,
   type MovementView,
+  type SupplierView,
 } from "@vawe/shared";
 import { BarList, ChartCard, ColumnChart, StatTile } from "@/components/charts";
-import { AddColour, AddItem, MoveStock } from "@/components/inventory/inventory-forms";
+import { AddColour, AddItem, MoveStock, SupplierForm } from "@/components/inventory/inventory-forms";
 import { LoadError } from "@/components/no-access";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { PendingFrame, Tabs, UrlStateProvider } from "@/components/url-state";
 import { VendorSearch } from "@/components/vendors/vendor-search";
 import { cx } from "@/lib/cx";
 import { dayLabel, monthLabel, monthLong } from "@/lib/dates";
-import { dateTime, number } from "@/lib/format";
+import { dateTime, money, number, phone } from "@/lib/format";
 import { apiGet, requireMe } from "@/lib/server-api";
 
 export const metadata: Metadata = { title: "Inventory" };
@@ -28,6 +29,7 @@ const TABS = [
   { value: "stock", label: "Stock" },
   { value: "usage", label: "Usage" },
   { value: "movements", label: "Movements" },
+  { value: "suppliers", label: "Suppliers" },
 ];
 
 export default async function InventoryPage({ searchParams }: { searchParams: Promise<{ tab?: string; cat?: string; q?: string; low?: string }> }) {
@@ -171,6 +173,41 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
         )}
       </div>
     );
+  } else if (tab === "suppliers") {
+    const res = await apiGet<SupplierView[]>("/v1/inventory/suppliers");
+    if (!res.ok) return <LoadError message={res.error.error} />;
+    const list = [...res.data].sort((a, b) => Number(b.isActive) - Number(a.isActive));
+    body = (
+      <div className="space-y-3">
+        <p className="text-sm text-ink-2">Raw material suppliers. A supplier typed on a new purchase in Finance is added here automatically.</p>
+        <Card className="divide-y divide-line">
+          {list.length === 0 && <p className="p-8 text-center text-sm text-ink-3">No suppliers yet.</p>}
+          {list.map((s) => (
+            <div key={s.id} className={cx("flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-start sm:justify-between sm:px-5", !s.isActive && "opacity-60")}>
+              <div className="min-w-0">
+                <p className="flex flex-wrap items-center gap-2 font-semibold">
+                  {s.name}
+                  {!s.isActive && <Badge>Not used</Badge>}
+                </p>
+                {s.supplies && <p className="text-[13px] text-ink-2">{s.supplies}</p>}
+                <p className="text-[12.5px] text-ink-3">
+                  {[s.contactName, s.phone ? phone(s.phone) : null, s.gstin].filter(Boolean).join(" · ") || "No contact details yet"}
+                </p>
+                {s.notes && <p className="text-[12.5px] text-ink-3">{s.notes}</p>}
+              </div>
+              <div className="flex shrink-0 items-center gap-3 sm:flex-col sm:items-end sm:gap-1">
+                <p className="text-[13px] text-ink-2 tabular-nums">
+                  {s.purchases} purchase{s.purchases === 1 ? "" : "s"}
+                  {s.spent !== null && s.purchases > 0 && ` · ${money(s.spent)}`}
+                </p>
+                {s.lastPurchase && <p className="text-[12.5px] text-ink-3">Last {dayLabel(s.lastPurchase)}</p>}
+                {isAdmin && <SupplierForm supplier={s} />}
+              </div>
+            </div>
+          ))}
+        </Card>
+      </div>
+    );
   } else {
     const res = await apiGet<MovementView[]>("/v1/inventory/movements");
     if (!res.ok) return <LoadError message={res.error.error} />;
@@ -227,6 +264,7 @@ export default async function InventoryPage({ searchParams }: { searchParams: Pr
     <UrlStateProvider>
       <PageHeader title="Inventory" description={isAdmin ? "Stock by item and colour. You can add items and move stock." : "Stock by item and colour. View only."}>
         {isAdmin && tab === "stock" && <AddItem />}
+        {isAdmin && tab === "suppliers" && <SupplierForm />}
       </PageHeader>
       <Tabs tabs={TABS} value={tab} />
       <PendingFrame>{body}</PendingFrame>

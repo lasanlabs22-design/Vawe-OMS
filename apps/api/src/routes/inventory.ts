@@ -1,15 +1,19 @@
-import { Hono } from "hono";
+import { Hono, type Context } from "hono";
 import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
-import { getDb, inventoryItems, inventoryVariants, orders, purchases, stockMovements, users, type Db } from "@vawe/db";
+import { getDb, inventoryItems, inventoryVariants, orders, purchases, stockMovements, suppliers, users, type Db } from "@vawe/db";
 import {
+  canView,
+  checkGstin,
   INVENTORY_CATEGORIES,
   inventoryItemSchema,
   movementSchema,
+  supplierSchema,
   variantSchema,
   variantUpdateSchema,
   type InventoryItemView,
   type InventoryUsage,
   type MovementView,
+  type SupplierView,
 } from "@vawe/shared";
 import { addDays, monthBounds, shiftMonth, todayIST } from "../lib/dates";
 import { fail, idParam, readBody } from "../lib/http";
@@ -150,6 +154,72 @@ inventoryRoutes.get("/inventory/movements", async (c) => {
     createdAt: m.createdAt.toISOString(),
   }));
   return c.json(list);
+});
+
+// ---------- Raw material suppliers ----------
+
+inventoryRoutes.get("/inventory/suppliers", async (c) => {
+  const db = await getDb();
+  const rows = await db
+    .select({
+      s: suppliers,
+      purchases: sql<number>`count(${purchases.id})`.mapWith(Number),
+      spent: sql<number>`coalesce(sum(${purchases.amount}), 0)`.mapWith(Number),
+      lastPurchase: sql<string | null>`max(${purchases.purchasedOn})::text`,
+    })
+    .from(suppliers)
+    .leftJoin(purchases, eq(purchases.supplierId, suppliers.id))
+    .groupBy(suppliers.id)
+    .orderBy(asc(suppliers.name));
+  // What was spent is finance data: only for people who can see Finance.
+  const showSpent = canView(c.get("user"), "finance");
+  const list: SupplierView[] = rows.map(({ s, purchases, spent, lastPurchase }) => ({
+    id: s.id,
+    name: s.name,
+    contactName: s.contactName,
+    phone: s.phone,
+    gstin: s.gstin,
+    supplies: s.supplies,
+    notes: s.notes,
+    isActive: s.isActive,
+    purchases,
+    spent: showSpent ? spent : null,
+    lastPurchase,
+  }));
+  return c.json(list);
+});
+
+async function supplierInput(c: Context<AppEnv>, partial: boolean) {
+  const input = await readBody(c, partial ? supplierSchema.partial() : supplierSchema);
+  if (input.gstin) {
+    const check = checkGstin(input.gstin);
+    if (!check.valid) fail(400, check.reason, { field: "gstin" });
+    input.gstin = check.gstin;
+  }
+  return input;
+}
+
+async function nameTaken(db: Db, name: string, exceptId?: string) {
+  const [row] = await db.select({ id: suppliers.id }).from(suppliers).where(sql`lower(${suppliers.name}) = lower(${name})`).limit(1);
+  return !!row && row.id !== exceptId;
+}
+
+inventoryRoutes.post("/inventory/suppliers", editStock, async (c) => {
+  const input = await supplierInput(c, false);
+  const db = await getDb();
+  if (await nameTaken(db, input.name!)) fail(409, "A supplier with this name already exists", { field: "name" });
+  const [row] = await db.insert(suppliers).values({ ...input, name: input.name! }).returning();
+  return c.json(row, 201);
+});
+
+inventoryRoutes.patch("/inventory/suppliers/:id", editStock, async (c) => {
+  const id = idParam(c);
+  const input = await supplierInput(c, true);
+  const db = await getDb();
+  if (input.name && (await nameTaken(db, input.name, id))) fail(409, "A supplier with this name already exists", { field: "name" });
+  const [row] = await db.update(suppliers).set(input).where(eq(suppliers.id, id)).returning();
+  if (!row) fail(404, "Supplier not found");
+  return c.json(row);
 });
 
 // ---------- Admin: items, colours, stock ----------

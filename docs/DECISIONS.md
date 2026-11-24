@@ -51,7 +51,7 @@ The estimate rebuilds the workbook's formulas (`packages/shared/src/pricing.ts`,
 
 | Question | Default used |
 | --- | --- |
-| Vendors | B2B buyers who pay Vawe. Suppliers are only names on purchases |
+| Vendors | B2B buyers who pay Vawe. Raw material suppliers are a separate list (Inventory → Suppliers) |
 | Vendor ID | `VND-0001` |
 | Payment terms | Fixed types (advance, before delivery, every 15 days, 30 days, monthly, custom days) plus a free-text note. The workbook's wording is kept in the note |
 | When payment is due | On delivery, plus the term's days (advance and before-delivery: due on delivery) |
@@ -69,7 +69,7 @@ The estimate rebuilds the workbook's formulas (`packages/shared/src/pricing.ts`,
 | Delivery / factory expense | Two expense types: Delivery and Factory |
 | Daily production expense | Expense type "Daily production", entered per day (one or more entries) |
 | Returns | A credit against an order that lowers what's owed. A credit of 0 is allowed for items remade at no charge |
-| Purchases | Supplier, invoice, amount, description. Stock is added separately in Inventory by an admin and can be linked to the purchase |
+| Purchases | Supplier, invoice, amount, description. The supplier is picked from the supplier list; a new name is added to the list automatically. Stock is added separately in Inventory by an admin and can be linked to the purchase |
 | Invoices | The OMS doesn't create GST invoices. It tracks amounts (assumes invoicing stays in Tally/Zoho) |
 | Payment methods | Cash, UPI, bank transfer, cheque |
 | Deleting payments or expenses | Admins only, for mistakes |
@@ -78,7 +78,8 @@ The estimate rebuilds the workbook's formulas (`packages/shared/src/pricing.ts`,
 
 | Question | Default used |
 | --- | --- |
-| Item list | The client's handwritten IMS list, plus glass (one line per glass type), silicone and screens |
+| Item list | The IMS list in the client's typed requirements PDF, plus glass (one line per glass type), silicone and screens. "Silicum fold" in the PDF is read as the slide-cum-fold kit (S+1 to S+5) |
+| Raw material suppliers | Inventory → Suppliers: name, contact, phone, GSTIN, what they supply, notes, with purchase count and last purchase. Spend is shown only to people with Finance view. Admins with Inventory edit add and edit them |
 | Colours | Not seeded, because the client hasn't named them per item. Admins add each colour (the expected count is shown) |
 | Units | Profiles and handle profiles in bars, glass in sq ft, kits in sets, the rest in pieces/rolls/boxes/tubes. Changeable per item |
 | Stock changes | Only through movements (in, out, recount), so usage history and the 3-month comparison are exact |

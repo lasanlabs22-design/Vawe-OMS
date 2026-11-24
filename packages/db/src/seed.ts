@@ -63,7 +63,8 @@ const DIVIDERS = [
   "Triple Check - 4 Row",
 ];
 
-// ---------- Inventory: the client's handwritten IMS list ----------
+// ---------- Inventory: the client's IMS list (as in their typed requirements PDF) ----------
+// Existing databases were brought in line by migration 0003; keep the two in step.
 
 type Stock = { name: string; category: InventoryCategory; unit: InventoryUnit; colours?: number; variants?: string[] };
 
@@ -74,27 +75,29 @@ const INVENTORY: Stock[] = [
   { name: "20mm CNC frame", category: "profile", unit: "bar", colours: 3 },
   { name: "16×45 frame", category: "profile", unit: "bar", colours: 3 },
   { name: "25mm air hinge profile", category: "profile", unit: "bar", colours: 3 },
-  { name: "25mm pin hinge profile", category: "profile", unit: "bar", colours: 3 },
-  { name: "55mm pasting profile (S.S)", category: "profile", unit: "bar", colours: 3 },
-  { name: "55mm pasting profile (D.S)", category: "profile", unit: "bar", colours: 3 },
+  { name: "21mm pin hinge profile", category: "profile", unit: "bar", colours: 3 },
+  { name: "55mm pasting profile (single slot)", category: "profile", unit: "bar", colours: 3 },
+  { name: "55mm pasting profile (double slot)", category: "profile", unit: "bar", colours: 3 },
   { name: "55mm leather profile", category: "profile", unit: "bar", colours: 3 },
   { name: "55mm leather T&B", category: "profile", unit: "bar", colours: 3 },
-  { name: "20mm dividers", category: "profile", unit: "bar", colours: 3 },
+  { name: "20mm dividers", category: "profile", unit: "bar", colours: 5 },
   // Handles
   { name: "45mm I handle", category: "handle", unit: "bar", colours: 9 },
   { name: "68mm G handle", category: "handle", unit: "bar", colours: 9 },
   { name: "20mm I handle", category: "handle", unit: "bar", colours: 5 },
   { name: "20mm CNC L handle", category: "handle", unit: "bar", colours: 3 },
-  { name: "20mm CNC hockey handle", category: "handle", unit: "bar", colours: 3 },
+  { name: "20mm CNC high handle", category: "handle", unit: "bar", colours: 3 },
   { name: "20mm CNC D-type handle", category: "handle", unit: "bar", colours: 3 },
-  { name: "20mm vertical concealed handle", category: "handle", unit: "bar", colours: 3 },
-  { name: "20mm horizontal concealed handle", category: "handle", unit: "bar", colours: 3 },
+  { name: "20mm vertical handle", category: "handle", unit: "bar", colours: 3 },
+  { name: "20mm horizontal handle", category: "handle", unit: "bar", colours: 3 },
   { name: "C handle", category: "handle", unit: "bar", colours: 5 },
   { name: "H handle", category: "handle", unit: "bar", colours: 5 },
   { name: "T handle", category: "handle", unit: "bar", colours: 5 },
-  { name: "Leather handles", category: "handle", unit: "piece" },
+  { name: "Leather handle", category: "handle", unit: "piece" },
   // Sliding door parts
-  { name: "Sliding door kit", category: "sliding", unit: "set", variants: ["2 door", "3 door", "4 door"] },
+  { name: "Sliding door 2-door kit", category: "sliding", unit: "set", colours: 3 },
+  { name: "Sliding door 3-door kit", category: "sliding", unit: "set", colours: 3 },
+  { name: "Sliding door 4-door kit", category: "sliding", unit: "set", colours: 3 },
   { name: "Sliding door track (top & bottom)", category: "sliding", unit: "bar", colours: 5 },
   { name: "Sliding door dividers", category: "sliding", unit: "bar", colours: 5 },
   { name: "Sliding door locks", category: "sliding", unit: "piece", colours: 5 },
@@ -104,18 +107,18 @@ const INVENTORY: Stock[] = [
   { name: "Synchro kit", category: "kit", unit: "set" },
   { name: "Telescopic kit", category: "kit", unit: "set", variants: ["T+1", "T+2", "T+3", "T+4"] },
   { name: "Slide-cum-fold kit", category: "kit", unit: "set", variants: ["S+1", "S+2", "S+3", "S+4", "S+5"] },
-  { name: "Bifold pooja kit", category: "kit", unit: "set", colours: 3 },
+  { name: "Bi-fold pooja", category: "kit", unit: "set", colours: 3 },
   // Hardware
   { name: "Screws", category: "hardware", unit: "box", colours: 9 },
   { name: "20mm profile hinges", category: "hardware", unit: "piece", colours: 3 },
   { name: "Profile door locks", category: "hardware", unit: "piece", colours: 3 },
   { name: "Air hinge", category: "hardware", unit: "piece" },
-  { name: "Pin hinges", category: "hardware", unit: "piece" },
+  { name: "Pin hinge", category: "hardware", unit: "piece" },
   { name: "Profile connectors", category: "hardware", unit: "piece" },
   { name: "Profile door 5mm gasket", category: "hardware", unit: "roll" },
   { name: "Butterfly", category: "hardware", unit: "piece" },
   { name: "Rod", category: "hardware", unit: "piece" },
-  // Glass and consumables (mentioned by the client; not on the handwritten list)
+  // Glass and consumables (mentioned by the client; not on the IMS list)
   { name: "Glass", category: "glass", unit: "sqft", variants: GLASS_TYPES.filter(([, g]) => g !== "none").map(([n]) => n) },
   { name: "Silicone", category: "consumable", unit: "tube" },
   { name: "Screens", category: "consumable", unit: "piece" },
