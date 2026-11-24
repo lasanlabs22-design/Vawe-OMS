@@ -23,8 +23,13 @@ type Draft = {
   legalName: string;
   tradeName: string;
   address: string;
+  city: string;
+  pincode: string;
   state: string;
   gstStatus: string;
+  businessType: string;
+  taxpayerType: string;
+  gstRegisteredOn: string;
   branches: string;
   pricingModel: PricingModel;
   paymentTerms: PaymentTerms;
@@ -48,8 +53,13 @@ const fromVendor = (v?: VendorDetail): Draft => ({
   legalName: v?.legalName ?? "",
   tradeName: v?.tradeName ?? "",
   address: v?.address ?? "",
+  city: v?.city ?? "",
+  pincode: v?.pincode ?? "",
   state: v?.state ?? "",
   gstStatus: v?.gstStatus ?? "",
+  businessType: v?.businessType ?? "",
+  taxpayerType: v?.taxpayerType ?? "",
+  gstRegisteredOn: v?.gstRegisteredOn ?? "",
   branches: String(v?.branches ?? 1),
   pricingModel: v?.pricingModel ?? "rft",
   paymentTerms: v?.paymentTerms ?? "before_delivery",
@@ -90,15 +100,23 @@ export function VendorForm({ vendor, isAdmin, defaultRates }: { vendor?: VendorD
       const res = await api<GstLookup>("POST", "/v1/gst/lookup", { gstin: d.gstin });
       setGst(res);
       if (res.valid) {
+        const g = res.details;
         setD((x) => ({
           ...x,
           gstin: res.gstin ?? x.gstin,
-          state: res.state ?? x.state,
-          legalName: res.details?.legalName ?? x.legalName,
-          tradeName: res.details?.tradeName ?? x.tradeName,
-          address: res.details?.address ?? x.address,
-          gstStatus: res.details?.status ?? x.gstStatus,
-          firmName: x.firmName || res.details?.tradeName || res.details?.legalName || "",
+          // The GST record's state, else the one the GSTIN's first two digits stand for.
+          state: g?.state ?? res.state ?? x.state,
+          legalName: g?.legalName ?? x.legalName,
+          tradeName: g?.tradeName ?? x.tradeName,
+          address: g?.address ?? x.address,
+          city: g?.city ?? x.city,
+          pincode: g?.pincode ?? x.pincode,
+          gstStatus: g?.status ?? x.gstStatus,
+          businessType: g?.businessType ?? x.businessType,
+          taxpayerType: g?.taxpayerType ?? x.taxpayerType,
+          gstRegisteredOn: g?.registeredOn ?? x.gstRegisteredOn,
+          branches: g?.branches ? String(g.branches) : x.branches,
+          firmName: x.firmName || g?.tradeName || g?.legalName || "",
         }));
       }
     } catch (e) {
@@ -170,11 +188,30 @@ export function VendorForm({ vendor, isAdmin, defaultRates }: { vendor?: VendorD
             <Input id="address" {...field("address")} />
           </Field>
           <div className="grid grid-cols-2 gap-5">
+            <Field label="City" htmlFor="city" optional>
+              <Input id="city" {...field("city")} />
+            </Field>
+            <Field label="Pincode" htmlFor="pincode" optional error={err("pincode")}>
+              <Input id="pincode" inputMode="numeric" maxLength={6} {...field("pincode")} />
+            </Field>
+          </div>
+          <div className="grid grid-cols-2 gap-5">
             <Field label="State" htmlFor="state" optional>
               <Input id="state" {...field("state")} />
             </Field>
             <Field label="Branches" htmlFor="branches" error={err("branches")}>
               <Input id="branches" type="number" min={1} inputMode="numeric" {...field("branches")} />
+            </Field>
+          </div>
+          <Field label="Business type" htmlFor="businessType" optional hint="Proprietorship, partnership, company…">
+            <Input id="businessType" {...field("businessType")} />
+          </Field>
+          <div className="grid grid-cols-2 gap-5">
+            <Field label="Taxpayer type" htmlFor="taxpayerType" optional hint="Regular or composition">
+              <Input id="taxpayerType" {...field("taxpayerType")} />
+            </Field>
+            <Field label="GST registered on" htmlFor="gstRegisteredOn" optional error={err("gstRegisteredOn")}>
+              <Input id="gstRegisteredOn" type="date" {...field("gstRegisteredOn")} />
             </Field>
           </div>
         </div>

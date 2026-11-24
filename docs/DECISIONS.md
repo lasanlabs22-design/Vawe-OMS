@@ -58,7 +58,7 @@ The estimate rebuilds the workbook's formulas (`packages/shared/src/pricing.ts`,
 | When payment is due | On delivery, plus the term's days (advance and before-delivery: due on delivery) |
 | Health | **At risk:** anything more than 30 days overdue. **Watch:** anything overdue, or under 70% of due orders paid on time. **Good:** otherwise. **New:** nothing due yet |
 | Communication | Follow-ups: what to discuss, with whom, by when, outcome |
-| GSTIN lookup | Checked offline now (format, check digit, state, PAN). The Cashfree lookup turns on when keys are added. Field names to confirm with the sandbox |
+| GSTIN lookup | Checked offline first (format, check digit, state, PAN), then Cashfree Secure ID when keys are set. Field names confirmed with the sandbox. Fetch fills legal and trade name, address, city, pincode, state (from the GST record), GST status, business type, taxpayer type, registration date and branches (principal place plus additional places). A GSTIN Cashfree has no record of is shown as not found. Cashfree only accepts whitelisted IPs, so production needs Railway's IP whitelisted or the public-key option |
 | Branches | A number only |
 | Walk-in customers | One built-in "Direct customer (walk-in)" vendor, with the customer's name and phone on each order |
 
