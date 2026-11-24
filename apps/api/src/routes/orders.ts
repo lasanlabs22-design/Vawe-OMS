@@ -388,6 +388,7 @@ function resolveItems(catalog: Catalog, items: (OrderItemInput & { widthMm: numb
     const glass = pick(catalog.glassTypes, it.glassType, "glass type", row);
     pick(catalog.handlePositions, it.handlePosition, "handle position", row);
     pick(ot.handleTypes, it.handleType, `handle type for ${ot.name}`, row);
+    pick(catalog.frameColours, it.handleColour, "handle colour", row);
     pick(catalog.dividers, it.divider, "divider", row);
 
     // Rules carried over from the workbook's validation.
@@ -450,6 +451,7 @@ async function writeItems(db: Db, orderId: string, items: ResolvedItem[], est: E
       heightMm: it.heightMm,
       handlePosition: it.handlePosition,
       handleType: it.handleType,
+      handleColour: it.handleColour,
       divider: it.divider,
       hingeHoles: it.hingeHoles,
       quantity: it.quantity,
@@ -528,7 +530,10 @@ orderRoutes.patch("/orders/:id", edit, async (c) => {
   }
 
   // Options already on this order may stay even if switched off in the catalogue since.
-  const keep = new Set(oldItems.flatMap((i) => [`order type:${i.orderType}`, `frame type:${i.frameType}`, `frame colour:${i.frameColour}`, `glass type:${i.glassType}`, `handle position:${i.handlePosition}`, `handle type for ${i.orderType}:${i.handleType}`, `divider:${i.divider}`]));
+  const keep = new Set(oldItems.flatMap((i) => [`order type:${i.orderType}`, `frame type:${i.frameType}`, `frame colour:${i.frameColour}`, `glass type:${i.glassType}`, `handle position:${i.handlePosition}`, `handle type for ${i.orderType}:${i.handleType}`, `handle colour:${i.handleColour}`, `divider:${i.divider}`]));
+  // Read before the transaction: loadCatalog uses its own query, which would wait on the open
+  // transaction forever with the single-connection dev database.
+  const catalog = itemsChanged ? await loadCatalog() : null;
 
   await db.transaction(async (tx) => {
     const t = tx as unknown as Db;
@@ -546,8 +551,8 @@ orderRoutes.patch("/orders/:id", edit, async (c) => {
       notes: input.notes ?? null,
       updatedAt: new Date(),
     };
-    if (itemsChanged) {
-      const items = resolveItems(await loadCatalog(), input.items, keep);
+    if (catalog) {
+      const items = resolveItems(catalog, input.items, keep);
       const est = await priceItems(t, input.vendorId, items);
       await t.update(orders).set({ ...details, vendorId: input.vendorId, ...totalsOf(est) }).where(eq(orders.id, id));
       await writeItems(t, id, items, est);
@@ -560,8 +565,8 @@ orderRoutes.patch("/orders/:id", edit, async (c) => {
   return c.json(await loadOrderDetail(db, id));
 });
 
-function itemKey(i: { orderType: string; frameType: string; frameColour: string; glassType: string; widthMm: number | string; heightMm: number | string; handlePosition: string; handleType: string; divider: string; hingeHoles: number | string; quantity: number | string }) {
-  return [i.orderType, i.frameType, i.frameColour, i.glassType, Number(i.widthMm), Number(i.heightMm), i.handlePosition, i.handleType, i.divider, Number(i.hingeHoles), Number(i.quantity)].join("|");
+function itemKey(i: { orderType: string; frameType: string; frameColour: string; glassType: string; widthMm: number | string; heightMm: number | string; handlePosition: string; handleType: string; handleColour: string; divider: string; hingeHoles: number | string; quantity: number | string }) {
+  return [i.orderType, i.frameType, i.frameColour, i.glassType, Number(i.widthMm), Number(i.heightMm), i.handlePosition, i.handleType, i.handleColour, i.divider, Number(i.hingeHoles), Number(i.quantity)].join("|");
 }
 
 /** Recalculate with the vendor's current rates (e.g. after a price change), before production only. */

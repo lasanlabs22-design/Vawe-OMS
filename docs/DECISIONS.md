@@ -27,6 +27,7 @@ The OMS was built before every question to the client was answered. Where an ans
 | Expected delivery | The workbook's rule (2 working days after the order date, Sundays off) unless set on the order |
 | Order code | `VW-YYMM-0001`, numbered per month |
 | Item quantity | "No. of shutters" |
+| Handle colour | Its own field per item, from the frame colour list. It follows the frame colour until chosen separately. Items made before it existed took their frame colour |
 | Order value in reports | Before GST, cancelled orders excluded |
 
 ## Pricing

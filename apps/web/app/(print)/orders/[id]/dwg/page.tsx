@@ -144,7 +144,7 @@ export default async function DwgPage({ params }: { params: Promise<{ id: string
                   <b>Glass:</b> {it.glassType}
                 </p>
                 <p>
-                  <b>Handle type:</b> {it.handleType} ({it.handlePosition})
+                  <b>Handle type:</b> {it.handleType} {it.handleColour} ({it.handlePosition})
                 </p>
                 <p>
                   <b>Divider:</b> {it.divider}
