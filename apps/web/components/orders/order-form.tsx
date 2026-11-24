@@ -31,19 +31,24 @@ type ItemDraft = {
   heightMm: string;
   handlePosition: string;
   handleType: string;
+  handleColour: string;
   divider: string;
   hingeHoles: string;
   quantity: string;
 };
 
 const SLIDING_DIVIDERS = ["Top Only", "Bottom Only", "Top and Bottom", "Double Center Line", "No Divider"];
+// A frame colour that means "no profile", so never a handle colour.
+const NO_PROFILE = "No Profile Only Glass";
 
 function blankItem(catalog: Catalog, key: number, from?: Partial<ItemDraft>): ItemDraft {
   const ot = catalog.orderTypes.find((o) => o.isActive)!;
+  const colour = catalog.frameColours.find((f) => f.isActive && f.name !== NO_PROFILE)?.name ?? "";
   return {
     orderType: ot?.name ?? "",
     frameType: catalog.frameTypes.find((f) => f.isActive)?.name ?? "",
-    frameColour: catalog.frameColours.find((f) => f.isActive)?.name ?? "",
+    frameColour: colour,
+    handleColour: colour,
     glassType: catalog.glassTypes.find((f) => f.isActive)?.name ?? "",
     widthMm: "",
     heightMm: "",
@@ -90,6 +95,7 @@ export function OrderForm({ catalog, vendors, order }: { catalog: Catalog; vendo
           heightMm: String(i.heightMm),
           handlePosition: i.handlePosition,
           handleType: i.handleType,
+          handleColour: i.handleColour,
           divider: i.divider,
           hingeHoles: String(i.hingeHoles),
           quantity: String(i.quantity),
@@ -117,6 +123,8 @@ export function OrderForm({ catalog, vendors, order }: { catalog: Catalog; vendo
         const ot = catalog.orderTypes.find((o) => o.name === next.orderType);
         // Handle types belong to the order type.
         if (patch.orderType && ot && !ot.handleTypes.some((h) => h.name === next.handleType)) next.handleType = ot.handleTypes.find((h) => h.isActive)?.name ?? "";
+        // The handle colour follows the frame colour until it's chosen separately.
+        if (patch.frameColour && it.handleColour === it.frameColour && patch.frameColour !== NO_PROFILE) next.handleColour = patch.frameColour;
         // The workbook's rules, applied as you type.
         if (["top", "bottom"].includes(next.handlePosition.toLowerCase())) next.divider = "No Divider";
         if (ot?.family === "sliding" && !SLIDING_DIVIDERS.includes(next.divider)) next.divider = "No Divider";
@@ -319,6 +327,15 @@ export function OrderForm({ catalog, vendors, order }: { catalog: Catalog; vendo
                       {opts(ot?.handleTypes ?? [], it.handleType).map((o) => (
                         <option key={o.id}>{o.name}</option>
                       ))}
+                    </Select>
+                  </Field>
+                  <Field label="Handle colour" htmlFor={`hc-${it.key}`}>
+                    <Select id={`hc-${it.key}`} value={it.handleColour} onChange={(e) => updateItem(it.key, { handleColour: e.target.value })}>
+                      {opts(catalog.frameColours, it.handleColour)
+                        .filter((o) => o.name !== NO_PROFILE || o.name === it.handleColour)
+                        .map((o) => (
+                          <option key={o.id}>{o.name}</option>
+                        ))}
                     </Select>
                   </Field>
                   <Field label="Divider" htmlFor={`dv-${it.key}`} hint={handleLocksDivider ? "No divider with a top/bottom handle" : undefined}>

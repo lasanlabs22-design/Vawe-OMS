@@ -135,6 +135,7 @@ export const orderItemSchema = z.object({
   heightMm: z.coerce.number({ message: "Enter the height" }).int("Height in whole mm").min(50, "Height looks too small").max(10000, "Height looks too big"),
   handlePosition: required("the handle position", 80),
   handleType: required("the handle type", 80),
+  handleColour: required("the handle colour", 80),
   divider: required("the divider", 80),
   hingeHoles: z.coerce.number().int().min(2, "2 to 5 hinge holes").max(5, "2 to 5 hinge holes"),
   quantity: z.coerce.number({ message: "Enter the number of shutters" }).int().min(1, "At least 1 shutter").max(500),

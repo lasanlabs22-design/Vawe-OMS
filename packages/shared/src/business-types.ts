@@ -153,6 +153,7 @@ export interface OrderItemView {
   heightMm: number;
   handlePosition: string;
   handleType: string;
+  handleColour: string;
   divider: string;
   hingeHoles: number;
   quantity: number;

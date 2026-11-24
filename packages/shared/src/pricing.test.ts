@@ -65,9 +65,10 @@ test("item amounts add up to the subtotal", () => {
 });
 
 test("material usage counts hinges and handles", () => {
-  const m = materialUsage([{ ...shutter, frameColour: "Black", hingeHoles: 4 }]);
+  const m = materialUsage([{ ...shutter, frameColour: "Black", handleColour: "Gold", hingeHoles: 4 }]);
   assert.equal(m.hinges, 8);
   assert.equal(m.handles[0]?.count, 2);
+  assert.equal(m.handles[0]?.name, `${shutter.handleType} Gold`);
   assert.equal(m.profiles[0]?.name, "20 MM Black");
 });
 

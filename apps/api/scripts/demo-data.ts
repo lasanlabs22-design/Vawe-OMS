@@ -95,6 +95,7 @@ function item() {
     orderType: ot.name,
     frameType: profile ? pick(["45 MM", "20 MM", "20 MM CNC", "50 MM Bella", "55 MM Leather"]) : "FTC",
     frameColour: pick(["Black", "Champion", "Rose Gold", "Gold", "Brush Gold", "CP Brush"]),
+    handleColour: pick(["Black", "Champion", "Rose Gold", "Gold", "Brush Gold", "CP Brush"]),
     glassType: glass.name,
     widthMm: between(profile ? 380 : 900, profile ? 650 : 2400),
     heightMm: between(profile ? 700 : 1900, profile ? 2400 : 2700),

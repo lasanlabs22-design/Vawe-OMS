@@ -206,7 +206,7 @@ export interface MaterialUsage {
 }
 
 export function materialUsage(
-  items: (PricedItemInput & { frameColour: string; hingeHoles: number })[],
+  items: (PricedItemInput & { frameColour: string; handleColour: string; hingeHoles: number })[],
 ): MaterialUsage {
   const profiles = new Map<string, number>();
   const glass = new Map<string, number>();
@@ -221,7 +221,11 @@ export function materialUsage(
       hinges += i.hingeHoles * i.quantity;
     }
     if (i.glassGroup !== "none") glass.set(i.glassType, (glass.get(i.glassType) ?? 0) + itemSqft(i));
-    if (!/no handle/i.test(i.handleType)) handles.set(i.handleType, (handles.get(i.handleType) ?? 0) + i.quantity);
+    if (!/no handle/i.test(i.handleType)) {
+      // Handles are stocked per colour, so they're counted per type and colour.
+      const h = `${i.handleType} ${i.handleColour}`;
+      handles.set(h, (handles.get(h) ?? 0) + i.quantity);
+    }
   }
   const list = <K extends string>(m: Map<string, number>, k: K) => [...m].map(([name, v]) => ({ name, [k]: round2(v) }) as { name: string } & Record<K, number>);
   return { profiles: list(profiles, "rft"), glass: list(glass, "sqft"), handles: list(handles, "count"), hinges, shutters };

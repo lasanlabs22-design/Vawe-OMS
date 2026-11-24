@@ -209,6 +209,8 @@ export const orderItems = pgTable(
     heightMm: integer("height_mm").notNull(),
     handlePosition: text("handle_position").notNull(),
     handleType: text("handle_type").notNull(),
+    // From the same colour list as the frame; starts as the frame colour.
+    handleColour: text("handle_colour").notNull(),
     divider: text("divider").notNull(),
     hingeHoles: integer("hinge_holes").notNull(),
     quantity: integer("quantity").notNull(),

@@ -153,7 +153,7 @@ export default async function OrderPage({ params }: { params: Promise<{ id: stri
                   <Spec label="Shutters" value={`${it.quantity} · ${number(it.sqft, 1)} sq ft`} />
                   <Spec label="Profile" value={`${it.frameType} ${it.frameColour}`} />
                   <Spec label="Glass" value={it.glassType} />
-                  <Spec label="Handle" value={`${it.handleType} · ${it.handlePosition}`} />
+                  <Spec label="Handle" value={`${it.handleType} ${it.handleColour} · ${it.handlePosition}`} />
                   <Spec label="Divider" value={it.divider} />
                   {it.family === "profile_shutter" && <Spec label="Hinge holes" value={String(it.hingeHoles)} />}
                 </dl>
