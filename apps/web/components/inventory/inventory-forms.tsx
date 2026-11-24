@@ -13,6 +13,7 @@ import {
   type InventoryUnit,
   type InventoryVariantView,
   type OrderOption,
+  type SupplierView,
 } from "@vawe/shared";
 import { api, ApiFailure } from "@/lib/client-api";
 import { todayIST } from "@/lib/dates";
@@ -252,6 +253,72 @@ export function MoveStock({ item, variant }: { item: InventoryItemView; variant:
           <div className="flex justify-end">
             <Button type="submit" loading={busy} disabled={!qty || (kind === "adjust" && !reason.trim())}>
               {kind ? KIND_TEXT[kind].cta : ""}
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
+  );
+}
+
+/** Add a supplier, or edit one when `supplier` is given. */
+export function SupplierForm({ supplier }: { supplier?: SupplierView }) {
+  const [open, setOpen] = useState(false);
+  const blank = { name: "", contactName: "", phone: "", gstin: "", supplies: "", notes: "" };
+  const initial = () => (supplier ? { name: supplier.name, contactName: supplier.contactName ?? "", phone: supplier.phone ?? "", gstin: supplier.gstin ?? "", supplies: supplier.supplies ?? "", notes: supplier.notes ?? "" } : blank);
+  const [f, setF] = useState(initial);
+  const set = (k: keyof typeof blank) => (e: { target: { value: string } }) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const close = () => (setOpen(false), setF(initial()));
+  const { error, busy, run } = useSave(close);
+  const save = (body: object) => run(() => (supplier ? api("PATCH", `/v1/inventory/suppliers/${supplier.id}`, body) : api("POST", "/v1/inventory/suppliers", body)));
+  return (
+    <>
+      {supplier ? (
+        <button type="button" onClick={() => setOpen(true)} className="rounded-md px-2 py-1 text-[12.5px] font-medium text-brand hover:bg-brand-soft">
+          Edit
+        </button>
+      ) : (
+        <Button variant="secondary" onClick={() => setOpen(true)}>
+          <Plus size={16} /> Add supplier
+        </Button>
+      )}
+      <Dialog open={open} onClose={close} title={supplier ? `Edit ${supplier.name}` : "Add a raw material supplier"} description="Who Vawe buys materials from.">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            save(f);
+          }}
+          className="space-y-4"
+        >
+          {error && <Alert>{error}</Alert>}
+          <Field label="Name" htmlFor="sup-name">
+            <Input id="sup-name" value={f.name} onChange={set("name")} autoFocus />
+          </Field>
+          <Field label="What they supply" htmlFor="sup-supplies" optional>
+            <Input id="sup-supplies" value={f.supplies} onChange={set("supplies")} placeholder="e.g. 45mm and 20mm profiles, screws" />
+          </Field>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Contact person" htmlFor="sup-contact" optional>
+              <Input id="sup-contact" value={f.contactName} onChange={set("contactName")} />
+            </Field>
+            <Field label="Phone" htmlFor="sup-phone" optional>
+              <Input id="sup-phone" type="tel" inputMode="tel" value={f.phone} onChange={set("phone")} />
+            </Field>
+          </div>
+          <Field label="GSTIN" htmlFor="sup-gstin" optional>
+            <Input id="sup-gstin" value={f.gstin} onChange={set("gstin")} className="uppercase" maxLength={15} />
+          </Field>
+          <Field label="Notes" htmlFor="sup-notes" optional>
+            <Input id="sup-notes" value={f.notes} onChange={set("notes")} />
+          </Field>
+          <div className={supplier ? "flex justify-between" : "flex justify-end"}>
+            {supplier && (
+              <Button type="button" variant="ghost" onClick={() => save({ isActive: !supplier.isActive })}>
+                {supplier.isActive ? "Mark as not used" : "Mark as used again"}
+              </Button>
+            )}
+            <Button type="submit" loading={busy} disabled={!f.name.trim()}>
+              {supplier ? "Save" : "Add supplier"}
             </Button>
           </div>
         </form>

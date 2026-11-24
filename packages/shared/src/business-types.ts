@@ -207,6 +207,21 @@ export interface ReturnView {
   recordedByName: string | null;
 }
 
+/** A raw material supplier. `spent` is only sent to people who can view Finance. */
+export interface SupplierView {
+  id: string;
+  name: string;
+  contactName: string | null;
+  phone: string | null;
+  gstin: string | null;
+  supplies: string | null;
+  notes: string | null;
+  isActive: boolean;
+  purchases: number;
+  spent: number | null;
+  lastPurchase: string | null;
+}
+
 export interface PurchaseView {
   id: string;
   supplierName: string;

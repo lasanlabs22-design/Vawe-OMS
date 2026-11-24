@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { boolean, date, index, integer, jsonb, numeric, pgEnum, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import {
   CATALOG_KINDS,
@@ -294,10 +295,30 @@ export const orderReturns = pgTable(
   (t) => [index("returns_order_idx").on(t.orderId), index("returns_date_idx").on(t.returnedOn)],
 );
 
+// Raw material suppliers (who Vawe buys from). Not vendors: vendors are the B2B buyers.
+export const suppliers = pgTable(
+  "suppliers",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    contactName: text("contact_name"),
+    phone: text("phone"),
+    gstin: text("gstin"),
+    // What they supply, in words ("45mm and 20mm profiles", "clear and fluted glass").
+    supplies: text("supplies"),
+    notes: text("notes"),
+    isActive: boolean("is_active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [uniqueIndex("suppliers_name_idx").on(sql`lower(${t.name})`)],
+);
+
 export const purchases = pgTable(
   "purchases",
   {
     id: uuid("id").primaryKey().defaultRandom(),
+    supplierId: uuid("supplier_id").references(() => suppliers.id, { onDelete: "set null" }),
+    // Kept as written on the purchase, so it still reads right if the supplier is renamed.
     supplierName: text("supplier_name").notNull(),
     invoiceNo: text("invoice_no"),
     purchasedOn: day("purchased_on").notNull(),
@@ -306,7 +327,7 @@ export const purchases = pgTable(
     recordedBy: userRef("recorded_by"),
     createdAt: createdAt(),
   },
-  (t) => [index("purchases_date_idx").on(t.purchasedOn)],
+  (t) => [index("purchases_date_idx").on(t.purchasedOn), index("purchases_supplier_idx").on(t.supplierId)],
 );
 
 // ---------- Inventory ----------

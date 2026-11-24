@@ -195,6 +195,16 @@ export const returnSchema = z.object({
   returnedOn: isoDay,
 });
 
+export const supplierSchema = z.object({
+  name: required("the supplier name"),
+  contactName: text(120),
+  phone: optionalPhone,
+  gstin: text(15),
+  supplies: text(300),
+  notes: text(500),
+  isActive: z.boolean().optional(),
+});
+
 export const purchaseSchema = z.object({
   supplierName: required("the supplier", 160),
   invoiceNo: text(60),
