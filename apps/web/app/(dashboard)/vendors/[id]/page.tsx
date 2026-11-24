@@ -10,7 +10,7 @@ import { Badge, Card } from "@/components/ui";
 import { AddFollowupButton, FollowupList } from "@/components/vendors/followups";
 import { HealthBadge } from "@/components/vendors/vendor-bits";
 import { monthLabel, monthLong, dayLabel } from "@/lib/dates";
-import { money, phone } from "@/lib/format";
+import { money, phone, shortDate } from "@/lib/format";
 import { apiGet, requireMe } from "@/lib/server-api";
 
 export const metadata: Metadata = { title: "Vendor" };
@@ -106,11 +106,21 @@ export default async function VendorPage({ params }: { params: Promise<{ id: str
               </div>
             ))}
           {!v.contact1Name && !v.contact1Phone && !v.contact2Name && <p className="mt-3 text-sm text-ink-3">No contacts yet.</p>}
-          {(v.legalName || v.address) && (
+          {(v.legalName || v.address || v.city || v.businessType) && (
             <div className="mt-5 border-t border-line pt-4 text-sm">
               {v.legalName && <p className="font-medium">{v.legalName}</p>}
               {v.address && <p className="text-ink-2">{v.address}</p>}
-              <p className="mt-1 text-[12px] text-ink-3">{v.branches} branch{v.branches === 1 ? "" : "es"}</p>
+              {(v.city || v.pincode) && <p className="text-ink-2">{[v.city, v.pincode].filter(Boolean).join(" ")}</p>}
+              <p className="mt-1 text-[12px] text-ink-3">
+                {[
+                  v.businessType,
+                  v.taxpayerType && `${v.taxpayerType} taxpayer`,
+                  v.gstRegisteredOn && `GST since ${shortDate(v.gstRegisteredOn)}`,
+                  `${v.branches} branch${v.branches === 1 ? "" : "es"}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")}
+              </p>
             </div>
           )}
         </Card>

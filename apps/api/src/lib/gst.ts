@@ -6,8 +6,8 @@ import { checkGstin, type GstLookup } from "@vawe/shared";
 //   GST_PROVIDER=cashfree
 //   CASHFREE_CLIENT_ID=...  CASHFREE_CLIENT_SECRET=...  CASHFREE_ENV=sandbox|production
 //
-// Field names follow Cashfree's Verification API docs; confirm them with the sandbox keys when they
-// arrive (the mapping below is tolerant of missing fields).
+// Field names follow Cashfree's Verification API (confirmed against the sandbox). The mapping is
+// tolerant of missing fields. Cashfree also requires the caller's IP to be whitelisted.
 
 export async function lookupGstin(input: string): Promise<GstLookup> {
   const check = checkGstin(input);
@@ -32,16 +32,27 @@ export async function lookupGstin(input: string): Promise<GstLookup> {
     });
     const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
     if (!res.ok) return { ...base, message: `The GST service said: ${String(data.message ?? res.statusText)}` };
-    const str = (k: string) => (typeof data[k] === "string" && data[k] ? (data[k] as string) : undefined);
-    const address = data.principal_place_address;
+    // A well-formed GSTIN that isn't registered comes back as 200 "GSTIN Doesn't Exist", without `valid`.
+    if (data.valid !== true) return { valid: false, reason: "No GST registration found for this GSTIN. Check it with the vendor.", source: "api" };
+    const text = (o: Record<string, unknown> | undefined, k: string) => (typeof o?.[k] === "string" && o[k] ? (o[k] as string).trim() : undefined);
+    const split = (data.principal_place_split_address ?? undefined) as Record<string, unknown> | undefined;
+    const others = Array.isArray(data.additional_address_array) ? data.additional_address_array.length : 0;
+    const registeredOn = text(data, "date_of_registration");
     return {
       ...base,
       source: "api",
       details: {
-        legalName: str("legal_name_of_business"),
-        tradeName: str("trade_name_of_business"),
-        address: typeof address === "string" ? address : undefined,
-        status: str("gst_in_status"),
+        legalName: text(data, "legal_name_of_business"),
+        tradeName: text(data, "trade_name_of_business"),
+        address: text(data, "principal_place_address"),
+        city: text(split, "city") ?? text(split, "district"),
+        pincode: text(split, "pincode"),
+        state: text(split, "state"),
+        status: text(data, "gst_in_status"),
+        businessType: text(data, "constitution_of_business"),
+        taxpayerType: text(data, "taxpayer_type"),
+        registeredOn: registeredOn && /^\d{4}-\d{2}-\d{2}$/.test(registeredOn) ? registeredOn : undefined,
+        branches: 1 + others,
       },
     };
   } catch {

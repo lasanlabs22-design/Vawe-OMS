@@ -87,7 +87,12 @@ export interface VendorDetail extends Omit<VendorListItem, "stats" | "openFollow
   legalName: string | null;
   tradeName: string | null;
   address: string | null;
+  city: string | null;
+  pincode: string | null;
   gstStatus: string | null;
+  businessType: string | null;
+  taxpayerType: string | null;
+  gstRegisteredOn: string | null;
   gstCheckedAt: string | null;
   branches: number;
   rates: Rates;
@@ -113,8 +118,20 @@ export interface GstLookup {
   gstin?: string;
   state?: string | null;
   pan?: string;
-  /** Filled only when a GST API is configured. */
-  details?: { legalName?: string; tradeName?: string; address?: string; status?: string } | null;
+  /** Filled only when a GST API is configured. `branches` counts the principal place plus any others. */
+  details?: {
+    legalName?: string;
+    tradeName?: string;
+    address?: string;
+    city?: string;
+    pincode?: string;
+    state?: string;
+    status?: string;
+    businessType?: string;
+    taxpayerType?: string;
+    registeredOn?: string;
+    branches?: number;
+  } | null;
   source: "offline" | "api";
   message?: string;
 }

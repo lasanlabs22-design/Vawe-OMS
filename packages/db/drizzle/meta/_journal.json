@@ -43,6 +43,13 @@
       "when": 1795504981446,
       "tag": "0005_new_energizer",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795506381425,
+      "tag": "0006_broken_johnny_storm",
+      "breakpoints": true
     }
   ]
 }
