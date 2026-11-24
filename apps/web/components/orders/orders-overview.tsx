@@ -14,7 +14,7 @@ const PHASE = {
   dispatched: { label: "Dispatched", color: "var(--chart-3)" },
 } as const;
 const PRE = ["design", "qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment"];
-const short = (s: keyof typeof STAGE_LABELS) => STAGE_LABELS[s].replace("Awaiting ", "").replace(" confirmation", "");
+const short = (s: keyof typeof STAGE_LABELS) => STAGE_LABELS[s].replace("Waiting for ", "").replace(" confirmation", "");
 
 export function OrdersOverview({ d }: { d: OrderInsights }) {
   const active = d.phases.pre + d.phases.production + d.phases.dispatched;

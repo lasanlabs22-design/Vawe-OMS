@@ -117,7 +117,7 @@ function Pipeline({ board, activeStage }: { board: OrderBoard; activeStage?: str
                 />
               </div>
               <CountUp value={n} className="mt-1.5 text-lg font-semibold tabular-nums" />
-              <span className="line-clamp-2 text-[11px] leading-tight text-ink-3 group-hover:text-ink-2">{STAGE_LABELS[s].replace("Awaiting ", "")}</span>
+              <span className="line-clamp-2 text-[11px] leading-tight text-ink-3 group-hover:text-ink-2">{STAGE_LABELS[s].replace("Waiting for ", "")}</span>
             </Link>
           );
         })}

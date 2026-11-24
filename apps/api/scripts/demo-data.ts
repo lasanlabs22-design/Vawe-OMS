@@ -82,7 +82,7 @@ const SOURCES: [string, string | null][] = [
   ["reference", "previous_customer"],
   ["reference", "existing_vendor"],
 ];
-const FLOW = ["qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment", "cutting", "drilling", "hinge_holes", "glass_cutting", "assembly", "packaging", "dispatched", "delivered"];
+const FLOW = ["qa", "dwg_confirmation", "estimate_confirmation", "awaiting_payment", "in_production", "cutting", "glass_cutting", "drilling", "hinge_holes", "assembly", "packaging", "route_planning", "dispatched", "delivered"];
 const today = IST();
 const total = Number(values.orders);
 
